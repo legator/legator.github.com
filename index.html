@@ -1,5 +1,5 @@
 ﻿<!doctype html>
-<html xmlns="http://www.w3.org/1999/html" xmlns="http://www.w3.org/1999/html">
+<html xmlns="http://www.w3.org/1999/xhtml">
 
 <head>
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
@@ -8,6 +8,246 @@
 
 	<link rel="stylesheet" type="text/css" href="css/main.css">
 	<link href='http://fonts.googleapis.com/css?family=Noto+Sans:400,400italic,700,700italic&subset=latin,cyrillic' rel='stylesheet' type='text/css'>
+
+	<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+	<script src="http://code.highcharts.com/highcharts.js"></script>
+	<script src="http://code.highcharts.com/modules/exporting.js"></script>
+	
+	<script type="text/javascript">
+	$(function () {
+        $('#career').highcharts({
+            chart: {
+                type: 'areaspline'
+            },
+            title: {
+                text: 'Career TimeLine'
+            },
+            legend: {
+                layout: 'vertical',
+                align: 'right',
+                verticalAlign: 'middle',
+                borderWidth: 0
+            },
+            xAxis: {
+                categories: [
+                    '2007',
+                    '2008',
+                    'June 2009',
+                    'September 2009',
+                    'November 2010',
+                    'December 2010',
+                    '2012',
+                    'February 2012',
+                    'March 2012',
+                    'May 2013',
+                    'June 2013',
+                    'November 2013'
+                ],
+                plotBands: [{ // visualize the weekend
+                    
+                }]
+            },
+            yAxis: {
+                title: {
+                    text: ''
+                }
+            },
+            tooltip: {
+                formatter: function() {
+                    return '<b>'+ this.series.name +'</b><br/>'+ this.x;
+                }
+            },
+            credits: {
+                enabled: false
+            },
+            plotOptions: {
+                areaspline: {
+                    fillOpacity: 0.5
+                }
+            },
+            series: [{
+                name: 'NULP Master degree',
+                data: [null, null, null, 5, 5]
+            }, {
+                name: 'NULP PhD Student',
+                data: [null, null, null, null, null, 7, 5, 3, 2, 3, 6, 7]
+            }, {
+                name: 'NULP Assistant',
+                data: [null, null, null, null, null, null, 3, 3, 4, 4]
+            }, {
+                name: 'Arleons',
+                data: [5, 4, 5, 3]
+            }, {
+                name: 'Produce.in.ua',
+                data: [null, 4, 2, 2]
+            }, {
+                name: 'Silego',
+                data: [null, null, null, null, null, null, null, 3, 4]
+            }, {
+                name: 'LASS_CNRS',
+                data: [null, null, null, null, null, null, null, null, null, 7, 6]
+            }]
+        });
+        });
+	</script>
+
+	<script>
+	$(function () {
+        $('#exp').highcharts({
+            chart: {
+                type: 'bar'
+            },
+            title: {
+                text: 'Skills'
+            },
+            xAxis: {
+                categories: ['php', 'C#', 'Java'],
+                title: {
+                    text: null
+                }
+            },
+            yAxis: {
+                min: 0,
+                title: {
+                    text: 'Years',
+                    align: 'high'
+                },
+                labels: {
+                    overflow: 'justify'
+                }
+            },
+            tooltip: {
+                headerFormat: '<b>{series.name}</b><br/>',
+                pointFormat: '{point.y} year'
+            },
+            plotOptions: {
+                bar: {
+                    dataLabels: {
+                        enabled: true
+                    }
+                }
+            },
+            legend: {
+                enabled: false
+            },
+            credits: {
+                enabled: false
+            },
+            series: [{
+                name: 'Expirence',
+                data: [3, 4.5, 3]
+            }]
+        });
+    });
+	</script>
+
+	<script>
+	$(function () {
+    
+        var colors = Highcharts.getOptions().colors,
+            categories = ['Web', 'Desktop', 'Framework'],
+            name = 'Browser brands',
+            data = [{
+                    y: 25,
+                    color: colors[0],
+                    drilldown: {
+                        name: 'Web technology',
+                        categories: ['php', 'javascript', 'mysql', 'html/css'],
+                        data: [10, 7, 5, 3],
+                        color: colors[0]
+                    }
+                }, {
+                    y: 55,
+                    color: colors[1],
+                    drilldown: {
+                        name: 'Desktop technology',
+                        categories: ['c#', 'Java', 'QT/C++'],
+                        data: [35, 12, 8],
+                        color: colors[1]
+                    }
+                }, {
+                    y: 25,
+                    color: colors[2],
+                    drilldown: {
+                        name: 'Framework',
+                        categories: ['XML/Json', 'MVC'],
+                        data: [15, 10],
+                        color: colors[2]
+                    }
+                }];
+    
+    
+        // Build the data arrays
+        var browserData = [];
+        var versionsData = [];
+        for (var i = 0; i < data.length; i++) {
+    
+            // add browser data
+            browserData.push({
+                name: categories[i],
+                y: data[i].y,
+                color: data[i].color
+            });
+    
+            // add version data
+            for (var j = 0; j < data[i].drilldown.data.length; j++) {
+                var brightness = 0.2 - (j / data[i].drilldown.data.length) / 5 ;
+                versionsData.push({
+                    name: data[i].drilldown.categories[j],
+                    y: data[i].drilldown.data[j],
+                    color: Highcharts.Color(data[i].color).brighten(brightness).get()
+                });
+            }
+        }
+    
+        // Create the chart
+        $('#skills').highcharts({
+            chart: {
+                type: 'pie'
+            },
+            title: {
+                text: 'Skills'
+            },
+            yAxis: {
+                title: {
+                    text: 'Total percent market share'
+                }
+            },
+            plotOptions: {
+                pie: {
+                    shadow: false,
+                    center: ['50%', '50%']
+                }
+            },
+            tooltip: {
+        	    valueSuffix: '%'
+            },
+            series: [{
+                name: 'Type',
+                data: browserData,
+                size: '60%',
+                dataLabels: {
+                    formatter: function() {
+                        return this.y > 5 ? this.point.name : null;
+                    },
+                    color: 'white',
+                    distance: -30
+                }
+            }, {
+                name: 'Technology',
+                data: versionsData,
+                size: '80%',
+                innerSize: '60%',
+                dataLabels: {
+                    formatter: function() {
+                        // display only if larger than 1
+                        return this.y > 1 ? '<b>'+ this.point.name +':</b> '+ this.y +'%'  : null;
+                    }
+                }
+            }]
+        });
+    });
+	</script>
 
 </head>
 
@@ -24,15 +264,14 @@
 	<p class='status'>.NET Desktop Software Developer</p>
 
 	<h2>Career</h2>
+	
+	<div id="career" style="min-width: 310px; height: 400px; margin: 0 auto"></div>
+	
 	<h4>National University Lviv Polytechnic</h4>
-	<p><strong>Bachelor degree</strong></p>
-	<p>2004 - 2008 - Computer Aided Design</p>
-	<p><strong>Master degree with honors</strong></p>
-	<p>2008 - 2019 - Information Technologies of Design</p>
-	<p><strong>PhD student</strong></p>
-	<p>2010 - current - Information Technologies of Design</p>
-	<p><strong>Assistant</strong></p>
-	<p>January 2012 – April 2013 - CAD Department</p>
+	<p>2008 year - <strong>Bachelor degree</strong> - Computer Aided Design</p>
+	<p>2010 year - <strong>Master degree with honors</strong> - Information Technologies of Design</p>
+	<p>Current - <strong>PhD student</strong> - Information Technologies of Design</p>
+	<p>January 2012 – April 2013 - <strong>Assistant</strong> - CAD Department in NULP</p>
 	
 	<h4>Arleons</h4>
 	<p>2007-2009 - web developer (php,mysql)</p>
@@ -114,17 +353,14 @@
 	</ul>
 
 	<h2>Skills</h2>
-	<p>Skills as diagram and ohter as list</p>
-	<ul>
-		<li>php - 6/10</li>
-		<li>css - 3/10</li>
-		<li>mysql - 5/10</li>
-		<li>javascript - 4/10</li>
-		<li>c# - 6/10</li>
-		<li>qt/c++ - 3/10</li>
-		<li>java - 4/10</li>
-		<li>xml/json - 5/10</li>
-	</ul>
+	
+	<table border="0" width="100%">
+	<tr>
+		<td><div id="skills" style="width: 450px; height: 300px; margin: 0 auto"></div></td>
+		<td><div id="exp" style="min-width: 500px; height: 300px; margin: 0 auto"></div></td>
+	</tr>
+	</table>
+
 	<h4>Aadditional skills</h4>
 	<strong>CAD/CAM/FEA System</strong>
 	<ul>
