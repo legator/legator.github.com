@@ -9,6 +9,14 @@
 	<link rel="stylesheet" type="text/css" href="css/main.css">
 	<link href='http://fonts.googleapis.com/css?family=Noto+Sans:400,400italic,700,700italic&subset=latin,cyrillic' rel='stylesheet' type='text/css'>
 
+	<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+	<script type="text/javascript" src="http://code.highcharts.com/highcharts.js"></script>
+	<script type="text/javascript" src="http://code.highcharts.com/modules/exporting.js"></script>
+
+	<script type="text/javascript" src="js/timeline.js"></script>
+	<script type="text/javascript" src="js/skillsyears.js"></script>
+	<script type="text/javascript" src="js/skillsdiagram.js"></script>
+
 </head>
 
 <body>
@@ -23,15 +31,15 @@
 	
 	<p class='status'>.NET Desktop Software Developer</p>
 
-	<h2>Education</h2>
-
+	<h2>Career</h2>
+	
+	<div id="career" style="min-width: 310px; height: 400px; margin: 0 auto"></div>
+	
 	<h4>National University Lviv Polytechnic</h4>
 	<p>2008 year - <strong>Bachelor degree</strong> - Computer Aided Design</p>
 	<p>2010 year - <strong>Master degree with honors</strong> - Information Technologies of Design</p>
 	<p>Current - <strong>PhD student</strong> - Information Technologies of Design</p>
 	<p>January 2012 - April 2013 - <strong>Assistant</strong> - CAD Department in NULP</p>
-
-	<h2>Career</h2>
 	
 	<h4>Arleons</h4>
 	<p>2007-2009 - web developer (php,mysql)</p>
@@ -55,7 +63,7 @@
 	<h4>Classification software for spectroscopy analysis</h4>
 	<ul>
 		<li>
-			<p>Develod app and informational software for classification spectrum of spectroscopy analysis - PhD project</p>
+			<p>Develod app and informational software for classification spectrum of spectroscopy analysis</p>
 			<p>Using Visual Studio, C#, Json, Encog, ZedGraph, log4net</p>
 		</li>
 	</ul>
@@ -113,21 +121,15 @@
 	</ul>
 
 	<h2>Skills</h2>
-	<ul>
-		<li>PHP - 3 years - 65%</li>
-		<li>MySQL - 3 yaers - 50%</li>
-		<li>HTML // CSS - 1 years - 24%</li>
-		<li>Javascript // jQuery - 2 years - 40%</li>
-		<li>C# - 4.5 years - 55%</li>
-		<li>C++ // QT - 2 years - 35%</li>
-		<li>Java - 3 years - 45%</li>
-	</ul>
+
+	<table border="0">
+	<tr>
+		<td><div id="skills" style="width: 450px; height: 300px; margin: 0 auto"></div></td>
+		<td><div id="exp" style="min-width: 500px; height: 300px; margin: 0 auto"></div></td>
+	</tr>
+	</table>
+
 	<h4>Aadditional skills</h4>
-	<strong>IDE</strong>
-	<ul>
-        	<li>Visual Studio(2008, 2010, 2012)</li>
-        	<li>Eclipse</li>
-	</ul>
 	<strong>CAD/CAM/FEA System</strong>
 	<ul>
         	<li>AutoCAD</li>
@@ -150,9 +152,6 @@
 		<li>German - elementary proficiency</li>
 		<li>Russian - native or bilingual proficiency</li>
 	</ul>
-
-	<h2>Summary</h2>
-	<p>I am. Net developer without commercial experience. Developed projects and libraries are open sources. Interested working in a startup projects.</p>
 
 	<h2>Contact</h2>
 	<p><strong>Adress:</strong> Ukraine, Lviv, str. Lybinska 102</p>
