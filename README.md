@@ -1,4 +1,4 @@
 legator.github.com
 ==================
 
-web page
+Resume // CV
