@@ -35,15 +35,39 @@
 
 	<h2>Blog</h2>
 		
-		<p>A few reasons why I decided to blogging:</p>
-		
-		<ul>
-			<li>Practice in expression of opinions;</li>
-			<li>Collection of materials in a single place;</li>
-			<li>Practice in translation of materials into English.</li>
-		</ul>
-		
-		<p>Blog appointed above all for myself, but I trust it will also be useful to someone</p>
+		<p>Came across an interesting article on Habra - <a href="http://habrahabr.ru/post/210796/">I got an interview on Facebook.</a> I'm currently looking for work , </p>
+		<p>so  attention has increased several times. The main idea of ​​the article - the implementation of swirling spiral sequence numbers.</p>
+		<p>I was wondering if I could solve this problem.</p>
+		<p>Writed algorithm invented by me and I have not tested or something like that exists . The main thing that I was able to solve it .</p>
+		<p>The basis of algorithm is to compute the values ​​in angles. Now need to determine how much is left to be cycles depending on the size </p>
+		<p>of the matrix. Having Written several such matrices found that the number of cycles is rounded value of  matrix  size ​​divided by 2. </p>
+		<p>The difference between adjacent angles - one less than the size of matrix side.
+		<p>To move to the next level - the value increased by one.</p>
+		<p></p>
+ 		<p>for (int i = 0; i < step; i++)</p>
+            	<p>{</p>
+                <p>	matrix[i, i] = start;</p>
+                <p>	start = start + (size - 1) - 2 * i;</p>
+		<p></p>
+                <p>	matrix[i, size - i - 1] = start;</p>
+                <p>	start = start + (size - 1) - 2 * i;</p>
+		<p></p>
+               	<p>	matrix[size - i - 1, size - i - 1] = start;</p>
+                <p>	start = start + (size - 1) - 2 * i;</p>
+		<p></p>
+                <p>	matrix[size - i - 1, i] = start;</p>
+                <p>	start = p;</p>
+            	<p>}</p>
+		<p></p>
+		<p>The final step - filling in the rest of the matrix - is performed after determining the values ​​in the corner</p>
+		<p>Example for filling matrix for top lines</p>
+		<p></p>
+		<p>int p = start + 1;</p>
+                <p>for (int j = 1; j < size - 2*i - 1; j++)</p>
+                <p>{</p>
+                <p>    matrix[i, i + j] = p++;</p>
+                <p>}</p>
+		<p></p>
 
 	<h2></h2>
 	<p>
