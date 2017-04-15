@@ -33,7 +33,10 @@
 	
 	<p class='status'>.net, js and sometimes Java,php,c/c++</p>
 
-	<h2>Blog</h2>
+	<h2>Blog
+	<br> 
+		<a href="../blog"> &larr; Back</a>
+	</h2>
 		
 		<p>A few reasons why I decided to blogging:</p>
 		
@@ -55,7 +58,7 @@
 			<img src="../image/twitter.png" alt="Follow on Twitter" width="202" height="37"></a>
 	</p>
 	<footer> <!-- site wide footer -->
-    		<p class='foot'>Copyright © 2013 Oleg 'legAToR' Faitas & <a href="http://arleons.com">Arleons.com</a></p>
+    		<p class='foot'>Copyright © 2017 Oleg 'legAToR' Faitas & <a href="http://arleons.com">Arleons.com</a></p>
 	</footer>
 </div>
 
@@ -63,6 +66,7 @@
 <script type="text/javascript">
 	var all_links = document.getElementsByTagName('a');
     	for (var i = 0, len = all_links.length; i < len; i++) {
+    		if (all_links[i].match("blog")) { continue; }
         	all_links[i].target = "_blank";
     	}
 </script>
