@@ -58,7 +58,7 @@
 <script type="text/javascript">
 	var all_links = document.getElementsByTagName('a');
     	for (var i = 0, len = all_links.length; i < len; i++) {
-    		if (all_links[i].match("blog")) { continue; }
+    		if (all_links[i].match && all_links[i].match("blog")) { continue; }
         	all_links[i].target = "_blank";
     	}
 </script>

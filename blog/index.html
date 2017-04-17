@@ -9,6 +9,9 @@
 	<link rel="stylesheet" type="text/css" href="css/template.css">
 	<link href='http://fonts.googleapis.com/css?family=Noto+Sans:400,400italic,700,700italic' rel='stylesheet' type='text/css'>
 
+	<script src="https://unpkg.com/vue/dist/vue.js"></script>
+	<script src="https://unpkg.com/vue-router/dist/vue-router.js"></script>
+
 	<script type="text/javascript">
   		var _gaq = _gaq || [];
   		_gaq.push(['_setAccount', 'UA-44947967-1']);
@@ -33,54 +36,56 @@
 
 	<p class='status'>.net, js and sometimes Java,php,c/c++</p>
 
-	<h2><a href="twitter.html" style="margin-left: 50%;">Tweet style</a></h2>
+	<div id="app">
+		<h2><a href="twitter.html" style="margin-left: 50%;">Tweet style</a></h2>
 
-	<ul id='timeline'>
-  		<li class='work' style="display: none;">
-    		<input class='radio' id='work3' name='works' type='radio' checked>
-    		<div class="relative">
-			   	<label for='work3'>Vue.js</label>
-			   	<span class='date'>17 Apr 2017</span>
-			   	<span class='circle'></span>
-    		</div>
-    		<div class='content'>
-      			<p>
-			        Why I chose Vue.js as framework for front-end. <a href="why-vue.html">Read more...</a>
-			        <br>Keywords: html5, js, frond-end, vuejs, knockoutjs
-			    </p>
-    		</div>
-  		</li>
-  		<li class='work'>
-    		<input class='radio' id='work2' name='works' type='radio'>
-    		<div class="relative">
-			   	<label for='work2'>Spirally twisted sequence of digits</label>
-			   	<span class='date'>12 May 2014</span>
-			   	<span class='circle'></span>
-    		</div>
-    		<div class='content'>
-      			<p>
-			        How to resolved task about spirally twisted sequence of digits. <a href="digits-sequence.html">Read more...</a>
-			        <br>Keywords: c#, .net
-			    </p>
-    		</div>
-  		</li>
-  		<li class='work'>
-    		<input class='radio' id='work1' name='works' type='radio'>
-    		<div class="relative">
-			   	<label for='work1'>Blog</label>
-			   	<span class='date'>12 May 2014</span>
-			   	<span class='circle'></span>
-    		</div>
-    		<div class='content'>
-      			<p>
-			        just blog). <a href="why-blog.html">Read more...</a>
-			    </p>
-    		</div>
-  		</li>
-	</ul>
+		<ul id='timeline'>
+	  		<li class='work' style="display: none;">
+	    		<input class='radio' id='work3' name='works' type='radio' checked>
+	    		<div class="relative">
+				   	<label for='work3'>Vue.js</label>
+				   	<span class='date'>17 Apr 2017</span>
+				   	<span class='circle'></span>
+	    		</div>
+	    		<div class='content'>
+	      			<p>
+				        Why I chose Vue.js as framework for front-end. <a href="why-vue.html">Read more...</a>
+				        <br>Keywords: html5, js, frond-end, vuejs, knockoutjs
+				    </p>
+	    		</div>
+	  		</li>
+	  		<li class='work'>
+	    		<input class='radio' id='work2' name='works' type='radio'>
+	    		<div class="relative">
+				   	<label for='work2'>Spirally twisted sequence of digits</label>
+				   	<span class='date'>12 May 2014</span>
+				   	<span class='circle'></span>
+	    		</div>
+	    		<div class='content'>
+	      			<p>
+				        How to resolved task about spirally twisted sequence of digits. <a href="digits-sequence.html">Read more...</a>
+				        <br>Keywords: c#, .net
+				    </p>
+	    		</div>
+	  		</li>
+	  		<li class='work'>
+	    		<input class='radio' id='work1' name='works' type='radio'>
+	    		<div class="relative">
+				   	<label for='work1'>Blog</label>
+				   	<span class='date'>12 May 2014</span>
+				   	<span class='circle'></span>
+	    		</div>
+	    		<div class='content'>
+	      			<p>
+				        just blog). <a href="why-blog.html">Read more...</a>
+				    </p>
+	    		</div>
+	  		</li>
+		</ul>
+	</div>
 
 	<h2></h2>
-	<p>
+	<p class="buttons">
 		<a href="https://www.facebook.com/oleg.faitas">
 			<img src="../image/facebook.png" alt="Follow on facebook" width="202" height="37"></a>
 		<a href="http://www.linkedin.com/pub/oleg-faitas/48/693/422">
@@ -92,6 +97,8 @@
     		<p class='foot'>Copyright © 2017 Oleg 'legAToR' Faitas & <a href="http://arleons.com">Arleons.com</a></p>
 	</footer>
 </div>
+
+<script src="js/app.vue"></script>
 
 </body>
 
