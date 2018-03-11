@@ -1,0 +1,30 @@
+<script type="text/javascript">
+	$(function(){
+		var posts;
+			$.getJSON( "posts.json", function( data ) {
+				posts = data.Posts;
+			});
+
+      		var mainPage = '<h2><a href="twitter.html" style="margin-left: 50%;">Tweet style</a></h2>';
+      		mainPage+="<ul id='timeline'>";
+
+      		for (var i = 0; i < posts.length; i++) {
+      			mainPage+="<li class='" + i + "'>";
+      			mainPage+="<input class='radio' id='" + posts[i].Url + "' name='" + i + "' type='radio'>";
+      			mainPage+="<div class='relative'>";
+      			mainPage+="<label for='" + posts[i].Url + "'>" + posts[i].Title + "</label>";
+      			mainPage+="<span class='date'>" + posts[i].Date + "</span>";
+      			mainPage+="<span class='circle'></span></div><div class='content'>";
+      			mainPage+="<p>" + posts[i].Description + "<a href='#/page/" + posts[i].Url + "'>";
+      			mainPage+='Read more...';
+      			mainPage+="</a>";
+      			mainPage+="<br>Keywords: " + posts[i].Keywords + "</div></li>";
+      		}
+      		
+      		mainPage+="</ul>";
+      		alert(mainPage);
+      		$("#app").append(mainPage); 
+	});
+</script>
+
+<div id="app"></div>

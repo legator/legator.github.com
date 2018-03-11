@@ -1,55 +1,15 @@
-﻿<!doctype html>
-<html xmlns="http://www.w3.org/1999/xhtml">
+﻿<h2>Spirally twisted sequence of digits<br> 
+	<a href="../blog/index.html"> &larr; Back</a>
+</h2>
 
-<head>
-	<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-	<title>.Not developer blog - Spirally twisted sequence of digits</title>
-	<meta name="keywords" content="developer, .net, js, javascript, web"> 
-
-	<link rel="stylesheet" type="text/css" href="css/template.css">
-	<link href='http://fonts.googleapis.com/css?family=Noto+Sans:400,400italic,700,700italic' rel='stylesheet' type='text/css'>
-
-	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.10.0/styles/monokai-sublime.min.css">
-	
-	<script src="http://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.10.0/highlight.min.js"></script>
-	<script>hljs.initHighlightingOnLoad();</script>
-	
-	<script type="text/javascript">
-  		var _gaq = _gaq || [];
-  		_gaq.push(['_setAccount', 'UA-44947967-1']);
-  		_gaq.push(['_trackPageview']);
-
-  		(function() {
-    			var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
-    		ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
-    		var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
-  		})();
-	</script>
-
-</head>
-
-<body>
-
-<a href="https://github.com/legator"><img style="position:absolute; top:0; right:0; border:0;" src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Based on GitHub"></a>
-
-<div class='container'>
-        
-	<h1>.Not developer blog</h1>
-	
-	<p class='status'>.net, js and sometimes Java,php,c/c++</p>
-
-	<h2>Spirally twisted sequence of digits<br> 
-		<a href="../blog"> &larr; Back</a>
-	</h2>
-
-		Came across an interesting article on Habra - <a href="http://habrahabr.ru/post/210796/">I got an interview on Facebook.</a> I'm currently looking for work , so  attention has increased several times. The main idea of ​​the article - the implementation of swirling spiral sequence numbers.
-		I was wondering if I could solve this problem.
-		Writed algorithm invented by me and I have not tested or something like that exists . The main thing that I was able to solve it .
-		The basis of algorithm is to compute the values ​​in angles. Now need to determine how much is left to be cycles depending on the size of the matrix. Having Written several such matrices found that the number of cycles is rounded value of  matrix  size ​​divided by 2.
-		The difference between adjacent angles - one less than the size of matrix side.
-		To move to the next level - the value increased by one.
-		<pre>
-			<code class="cs">
+Came across an interesting article on Habra - <a href="http://habrahabr.ru/post/210796/">I got an interview on Facebook.</a> I'm currently looking for work , so  attention has increased several times. The main idea of ​​the article - the implementation of swirling spiral sequence numbers.
+I was wondering if I could solve this problem.
+Writed algorithm invented by me and I have not tested or something like that exists . The main thing that I was able to solve it .
+The basis of algorithm is to compute the values ​​in angles. Now need to determine how much is left to be cycles depending on the size of the matrix. Having Written several such matrices found that the number of cycles is rounded value of  matrix  size ​​divided by 2.
+The difference between adjacent angles - one less than the size of matrix side.
+To move to the next level - the value increased by one.
+<pre>
+	<code class="cs">
 for (int i = 0; i < step; i++)
 {
     matrix[i, i] = start;
@@ -61,45 +21,17 @@ for (int i = 0; i < step; i++)
     matrix[size - i - 1, i] = start;
     start = p;
 }
-			</code>
-		</pre>
-		The final step - filling in the rest of the matrix - is performed after determining the values ​​in the corner.
-		Example for filling matrix for top lines.
-		<pre>
-			<code class="cs">
+	</code>
+</pre>
+The final step - filling in the rest of the matrix - is performed after determining the values ​​in the corner.
+Example for filling matrix for top lines.
+<pre>
+	<code class="cs">
 int p = start + 1;
 for (int j = 1; j < size - 2*i - 1; j++)
 {
 	matrix[i, i + j] = p++;
 }
-			</code>
-		</pre>
-		And there is a <a href="digitalsequnce.cs">code</a>.
-
-	<h2></h2>
-	<p>
-		<a href="https://www.facebook.com/oleg.faitas">
-			<img src="../image/facebook.png" alt="Follow on facebook" width="202" height="37"></a>
-		<a href="http://www.linkedin.com/pub/oleg-faitas/48/693/422">
-			<img src="../image/linkedin.png" alt='Follow on LinkedIn' width="202" height="37"></a>
-		<a href="http://www.twitter.com/_legator">
-			<img src="../image/twitter.png" alt="Follow on Twitter" width="202" height="37"></a>
-	</p>
-	<footer> <!-- site wide footer -->
-    		<p class='foot'>Copyright © 2013 Oleg 'legAToR' Faitas & <a href="http://arleons.com">Arleons.com</a></p>
-	</footer>
-</div>
-
-<!--Make all links open in new window start-->
-<script type="text/javascript">
-	var all_links = document.getElementsByTagName('a');
-    	for (var i = 0, len = all_links.length; i < len; i++) {
-    		if (all_links[i].match("blog")) { continue; }
-        	all_links[i].target = "_blank";
-    	}
-</script>
-<!--Make all links open in new window end-->
-
-</body>
-
-</html>
+	</code>
+</pre>
+And there is a <a href="digitalsequnce.cs">code</a>.
