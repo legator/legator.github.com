@@ -1,0 +1,41 @@
+<h2>Hangfire and SQLite as Data Storage<br> 
+    <a href="../blog/index.html"> &larr; Back</a>
+</h2>
+Після описаної архітектури і вибраних технологій переходимо до реалізації нашої системи. Створили web api проект на .net core. У мене вже є драфтовий модуль для роботи з Google Calendar та  EPG, тому рішив глянути до реалізації скедюлера.
+У мене на проекті використовуються Quartz та Hangfire, тому зразу дивився на них. Проте вони обоє використовують бази даних або кеш. Що то що то, не сильно мене задовільняло, оскільки це затратні речі з точки фінансів. Сервери бази даних найбільш затратні і нам не треба як такого сервера оскільки ми нічого "важкого" робити не будемо. 
+Покопавшись я найшов, що Hangfire може працювати з mysql у вигляді файла - SQLite. І тут пішли танці з бубнем. Такі речі заставляють тебе задуматись у власних знаннях, оскільки я привик вірити документації)))
+Ну що ж почнемо з пустого проету і наступним кодом
+
+		public void ConfigureServices(IServiceCollection services)
+		{
+			services.AddMvc().AddWebApiConventions();
+
+			var builder = new ConfigurationBuilder()
+				.SetBasePath(Directory.GetCurrentDirectory())
+				.AddJsonFile("appsettings.json");
+
+			var conntectionString = builder.Build()["SQLiteHangfire"];
+
+			// connection string for hangfire
+			services.AddHangfire(x => x.UseSQLiteStorage(conntectionString));
+		}
+
+		// This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
+		public void Configure(IApplicationBuilder app, IHostingEnvironment env)
+		{
+			// hangfire
+			app.UseHangfireServer();
+			app.UseHangfireDashboard();
+
+			// web api route
+			app.UseMvc(routes =>
+			{
+				routes.MapWebApiRoute("DefaultApi", "api/{controller}/{id?}");
+			});
+
+			app.UseHttpsRedirection();
+		}
+Ну ось ти думаєш, що все - можна запускати і буде тобі щастя, а ні. Підключення не вдається. І ти пробуєш різні підходи до вказання підлючення до бази даних. Після години мордування - результат виявився взагалі шокуючих. Як визначити що це стрічка підключення - правильно, там має бути символ - ";". Перемога.
+І тут ти думаєш - все я можу побачити головну сторінку hangfire. А ні, треба ше поставити EntityFramework.SQLite - де це написано?(((
+Але тепер все - ми готові побачити дашборд і можемо скедюлити джоби.
+Далі буде... 
