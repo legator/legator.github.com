@@ -53,9 +53,6 @@
         	$("#app").load(pageId+".html"); 
 		};
 
-    	var twitter = function () {
-    		showPage("twitter"); 
-    	};
     	var viewPage = function (pageId) {
     		showPage(pageId);
       	};
@@ -69,7 +66,6 @@
       	}
 
       	var routes = {
-        	'/twitter': twitter,
         	'/page/:pageId': viewPage,
         	'/keywords/:keyword': keywords,
         	'/search/:searchValue': search
@@ -95,8 +91,6 @@
 
 	<div id="header"></div>
 	<div id="app">
-		<h2><a href="twitter.html" style="margin-left: 50%;">Tweet style</a></h2>
-
 		<ul id='timeline'>
 	   		<li class='work'>
 	    		<input class='radio' id='hangfire-net-core-datastorage' name='works' type='radio'>
