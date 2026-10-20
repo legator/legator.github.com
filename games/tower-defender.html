@@ -165,9 +165,10 @@
 "use strict";
 // Original code and art, written from scratch.
 const CS = 40, COLS = 13, ROWS = 13;          // square 13 x 13 grid
+const TWO_IN_GOLD = 1.5;
 const MAX_WAVES = 50, AUTO_WAIT = 25, START_LIVES = 20, START_GOLD = 100;
 const MAX_LEVEL = 5;                          // buy (level 1) + 4 upgrades
-const UPGRADE_COST  = [20, 40, 80, 320];      // cost of upgrade 1..4
+const UPGRADE_MULT  = [1, 2, 4, 16];          // upgrade 1..4 cost this many times the tower price (a 10g tower: 10, 20, 40, 160)
 const UPGRADE_BONUS = [0.05, 0.05, 0.05, 0.20]; // power added by upgrade 1..4
 const UPGRADE_TIME  = [3, 5, 8, 12];          // seconds a tower is offline after upgrade 1..4
 const RANGE_PER_UPGRADE = 0.3;                // range and splash radius grow by this per upgrade
@@ -200,6 +201,7 @@ const TOWERS = {
   burst:   { name: "Burst",   icon: "W", cost: 40, range: 1.6, cd: 2.0, dmg: 10, color: "#dd6b20", air: true,  ground: true,  desc: "Hits every creep in a small ring, ground and air. Strong when creeps bunch up near it." },
   beacon:  { name: "Beacon",  icon: "L", cost: 30, range: 1.8, cd: 0, dmg: 0,  color: "#d53f8c", air: true,  ground: true,  buff: 0.2, desc: "Does not attack. Adds damage to every tower within range. Several beacons stack, up to 60%." },
   dynamo:  { name: "Dynamo",  icon: "D", cost: 35, range: 2.0, cd: 0, dmg: 0,  color: "#d69e2e", air: true,  ground: true,  speed: 0.25, desc: "Produces power. Does not attack. Towers within range reload 25% faster. Several dynamos stack, up to 50%." },
+  lance:   { name: "Lance",   icon: "J", cost: 80, range: 2.5, cd: 0.8, dmg: 30, color: "#9b2c2c", air: true,  ground: true,  desc: "Fires only along its own row and column, up to 2 cells each way, and hits every creep on those lines. Does 66% damage to every creep type. Expensive; put it where the route runs straight past it." },
   tesla:   { name: "Tesla",   icon: "E", cost: 40, range: 2.6, cd: 1.2, dmg: 7,  color: "#4299e1", air: true,  ground: true,  arcs: 6, desc: "Electric arcs strike up to 6 creeps in range at once. Good against groups and fast creeps; hits ground and air." }
 };
 const TOWER_KEYS = Object.keys(TOWERS);
@@ -223,7 +225,8 @@ const ICONS = {
   beacon:  { f: "M10 2h4v3h-4z M7.5 5h9l-1.2 4h-6.6z M10 9h4v11h-4z" },
   dynamo:  { f: "M9.5 12a2.5 2.5 0 1 0 5 0a2.5 2.5 0 1 0 -5 0",
              s: "M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M5.6 18.4l2.8-2.8M15.6 8.4l2.8-2.8" },
-  tesla:   { s: "M2 12l3-4 3 8 3-8 3 8 3-8 3 4 2-0" }
+  tesla:   { s: "M2 12l3-4 3 8 3-8 3 8 3-8 3 4 2-0" },
+  lance:   { f: "M10.5 2h3v8.5H22v3h-8.5V22h-3v-8.5H2v-3h8.5z" }
 };
 const ICON_PATHS = {};
 for (const k of Object.keys(ICONS)) {
@@ -263,6 +266,7 @@ const VS = {
   aura:    { fast: 1 },
   burst:   { squad: 1, splitling: 1 },
   tesla:   { squad: 1, splitling: 1, fast: 1 },
+  lance:   { normal: 0.66, fast: 0.66, tough: 0.66, flyer: 0.66, squad: 0.66, spawner: 0.66, splitling: 0.66, decoy: 0.66, boss: 0.66 },
   dynamo:  {},
   beacon:  {}
 };
@@ -294,7 +298,7 @@ function towerStats(t) {
     buff: def.buff ? def.buff * (1 + bonus) : 0
   };
 }
-function upgradeCost(t) { return UPGRADE_COST[t.level - 1]; }
+function upgradeCost(t) { return TOWERS[t.type].cost * UPGRADE_MULT[t.level - 1]; }
 
 // ---------- creeps ----------
 const CREEPS = {
@@ -309,14 +313,14 @@ const CREEPS = {
   boss:      { hp: 600, speed: 0.9, reward: 20, color: "#1a202c", r: 0.45 }
 };
 const CREEP_INFO = {
-  normal:    { name: "Normal",    desc: "Plain walker along the maze. Any ground tower can hit it." },
+  normal:    { name: "Normal",    desc: "Plain walker. Takes the shortest route, using diagonal steps where they save distance. Any ground tower can hit it." },
   fast:      { name: "Fast",      desc: "Moves at high speed with low health. Slows and Nets help most." },
   tough:     { name: "Tough",     desc: "Heavy health and slow. Toxin and Net work well against it." },
   flyer:     { name: "Air",       desc: "Ignores the maze and flies straight to its exit. Only towers that hit air can stop it." },
   squad:     { name: "Squad",     desc: "Comes in a tight group of 4 with short gaps. Splash, Mortar and Burst work well." },
   spawner:   { name: "Spawner",   desc: "When killed, splits into 4 splitlings where it died." },
   splitling: { name: "Splitling", desc: "Small child of a Spawner. Quick to kill, but it counts toward the wave." },
-  decoy:     { name: "Decoy",     desc: "Moves diagonally and cuts corners, so it can skip past towers on the usual path." },
+  decoy:     { name: "Decoy",     desc: "Cuts corners: squeezes diagonally between two towers or walls that touch at a corner, where other creeps must go around." },
   boss:      { name: "Boss",      desc: "One per map every 10 waves. Very high health, slow, and a large reward." }
 };
 
@@ -375,38 +379,70 @@ const isEntry = (x, y) => S.map.ents.some(e => e.x === x && e.y === y);
 const isExit = (x, y) => S.map.exits.some(e => e.x === x && e.y === y);
 const canHit = (def, c) => (c.flying ? def.air : def.ground);
 
-// Steps from every open cell to one exit (BFS). dirs = 4-way for normal creeps, 8-way for decoys.
-function computeFieldFrom(exit, dirs) {
+// Distance from every open cell to one exit (Dijkstra): a straight step costs 1, a diagonal step costs sqrt(2).
+// Strict mode (all ground creeps): a diagonal step needs both side cells open, so nobody cuts through a tower corner.
+// Loose mode (decoys): diagonal steps may squeeze between two towers or walls that touch at a corner.
+const M_STRICT = { dirs: DIRS8, strict: true };
+const M_LOOSE  = { dirs: DIRS8, strict: false };
+const stepCost = (dx, dy) => (dx !== 0 && dy !== 0 ? Math.SQRT2 : 1);
+const openCell = (x, y) => inBounds(x, y) && !isWall(x, y) && !S.towers.has(key(x, y));
+function stepOk(x, y, dx, dy, mode) {
+  return dx === 0 || dy === 0 || !mode.strict || (openCell(x + dx, y) && openCell(x, y + dy));
+}
+
+function computeFieldFrom(exit, mode) {
   const d = Array.from({ length: ROWS }, () => Array(COLS).fill(Infinity));
   d[exit.y][exit.x] = 0;
-  const q = [{ x: exit.x, y: exit.y }];
-  for (let i = 0; i < q.length; i++) {
-    const c = q[i];
-    for (const [dx, dy] of dirs) {
-      const nx = c.x + dx, ny = c.y + dy;
-      if (!inBounds(nx, ny) || isWall(nx, ny) || S.towers.has(key(nx, ny))) continue;
-      if (d[ny][nx] !== Infinity) continue;
-      d[ny][nx] = d[c.y][c.x] + 1;
-      q.push({ x: nx, y: ny });
+  const heap = [[0, exit.x, exit.y]];
+  const push = it => {
+    heap.push(it);
+    let i = heap.length - 1;
+    while (i > 0) { const p = (i - 1) >> 1; if (heap[p][0] <= heap[i][0]) break; [heap[p], heap[i]] = [heap[i], heap[p]]; i = p; }
+  };
+  const pop = () => {
+    const top = heap[0], last = heap.pop();
+    if (heap.length) {
+      heap[0] = last;
+      let i = 0;
+      for (;;) {
+        const l = 2 * i + 1, r = l + 1; let m = i;
+        if (l < heap.length && heap[l][0] < heap[m][0]) m = l;
+        if (r < heap.length && heap[r][0] < heap[m][0]) m = r;
+        if (m === i) break;
+        [heap[m], heap[i]] = [heap[i], heap[m]]; i = m;
+      }
+    }
+    return top;
+  };
+  while (heap.length) {
+    const [dist, x, y] = pop();
+    if (dist > d[y][x]) continue;
+    for (const [dx, dy] of mode.dirs) {
+      const nx = x + dx, ny = y + dy;
+      if (!openCell(nx, ny) || !stepOk(x, y, dx, dy, mode)) continue;
+      const nd = dist + stepCost(dx, dy);
+      if (nd < d[ny][nx] - 1e-9) { d[ny][nx] = nd; push([nd, nx, ny]); }
     }
   }
   return d;
 }
-function computeFields(dirs) { return S.map.exits.map(e => computeFieldFrom(e, dirs)); }
+function computeFields(mode) { return S.map.exits.map(e => computeFieldFrom(e, mode)); }
 
 // Recompute every route after the towers change.
 function refreshFields() {
-  S.fields = computeFields(DIRS);
-  S.fields8 = computeFields(DIRS8);
+  S.fields = computeFields(M_STRICT);
+  S.fields8 = computeFields(M_LOOSE);
   updateRoute();
 }
 
-function bestNeighbor(f, x, y, dirs) {
-  let best = null, bd = f[y][x];
-  for (const [dx, dy] of dirs) {
+// Next cell on the cheapest route: the neighbor with the lowest (its distance + the step to reach it).
+function bestNeighbor(f, x, y, mode) {
+  let best = null, bs = f[y][x] + 1e-9;
+  for (const [dx, dy] of mode.dirs) {
     const nx = x + dx, ny = y + dy;
-    if (!inBounds(nx, ny)) continue;
-    if (f[ny][nx] < bd) { bd = f[ny][nx]; best = { x: nx, y: ny }; }
+    if (!inBounds(nx, ny) || f[ny][nx] === Infinity || !stepOk(x, y, dx, dy, mode)) continue;
+    const sc = f[ny][nx] + stepCost(dx, dy);
+    if (sc < bs) { bs = sc; best = { x: nx, y: ny }; }
   }
   return best;
 }
@@ -420,7 +456,7 @@ function updateRoute() {
       let c = { x: e.x, y: e.y };
       route.add(key(c.x, c.y));
       for (let guard = 0; guard < COLS * ROWS && !isExit(c.x, c.y); guard++) {
-        const n = bestNeighbor(f, c.x, c.y, DIRS);
+        const n = bestNeighbor(f, c.x, c.y, M_STRICT);
         if (!n) break;
         c = n; route.add(key(c.x, c.y));
       }
@@ -464,7 +500,7 @@ function pickField(c) {
     const d = arr[j][c.cy][c.cx];
     if (d < bd) { bd = d; best = j; }
   }
-  if (c.allowed.includes(c.exitIdx) && arr[c.exitIdx][c.cy][c.cx] <= bd) best = c.exitIdx;
+  if (c.allowed.includes(c.exitIdx) && arr[c.exitIdx][c.cy][c.cx] <= bd + 1e-9) best = c.exitIdx;
   if (best === null) return arr[c.exitIdx];
   c.exitIdx = best;
   return arr[best];
@@ -485,11 +521,14 @@ function stepCreep(c, dt) {
   while (dist > 0) {
     if (!c.next) {
       const f = pickField(c);
-      const n = bestNeighbor(f, c.cx, c.cy, c.diag ? DIRS8 : DIRS);
+      const n = bestNeighbor(f, c.cx, c.cy, c.diag ? M_LOOSE : M_STRICT);
       if (!n) return null;
       c.next = n;
       const nd = [n.x - c.cx, n.y - c.cy];
-      if (c.dir && (nd[0] !== c.dir[0] || nd[1] !== c.dir[1])) c.cornerT = CORNER_TIME;  // sharp turn
+      if (c.dir) {   // a turn of 90 degrees or more is a sharp turn; a gentle 45 degree bend is not
+        const cos = (nd[0] * c.dir[0] + nd[1] * c.dir[1]) / (Math.hypot(nd[0], nd[1]) * Math.hypot(c.dir[0], c.dir[1]));
+        if (cos < 0.1) c.cornerT = CORNER_TIME;
+      }
       c.dir = nd;
     }
     const tx = c.next.x + 0.5, ty = c.next.y + 0.5;
@@ -519,7 +558,7 @@ function kill(c) {
   if (c.dead) return;
   if (c.type === "spawner") splitCreep(c);
   c.dead = true;
-  S.gold += c.reward;
+  S.gold += c.reward * S.goldMult;
   retire(c);
 }
 function hurt(c, amt) { if (c.dead) return; c.hp -= amt; if (c.hp <= 0) kill(c); }
@@ -533,7 +572,7 @@ function canPlace(x, y) {
   if (!inBounds(x, y) || isWall(x, y) || isEntry(x, y) || isExit(x, y)) return false;
   if (S.towers.has(key(x, y)) || creepOnCell(x, y)) return false;
   S.towers.set(key(x, y), { tentative: true });
-  const f = computeFields(DIRS);
+  const f = computeFields(M_STRICT);   // same reachability as 4-way, because a diagonal step needs both side cells open
   S.towers.delete(key(x, y));
   for (const e of S.map.ents) for (const j of e.exits) if (f[j][e.y][e.x] === Infinity) return false;
   return S.creeps.every(c => c.flying || c.allowed.some(j => f[j][c.cy][c.cx] !== Infinity));
@@ -619,6 +658,16 @@ function towerFire(t, dt) {
       if (t.type === "aura") { c.slowT = Math.max(c.slowT, 0.6); c.slowMul = st.slow; }
       else { shot(tx, ty, c.x, c.y, def.color); hurt(c, st.dmg * eff(t, c)); }
     }
+    return;
+  }
+
+  if (t.type === "lance") {
+    const onLine = S.creeps.filter(c => !c.dead && canHit(def, c) && (
+      (Math.abs(c.x - tx) <= 0.5 && Math.abs(c.y - ty) <= st.range) ||
+      (Math.abs(c.y - ty) <= 0.5 && Math.abs(c.x - tx) <= st.range)));
+    if (!onLine.length) return;
+    t.cd = st.cd;
+    for (const c of onLine) { shot(tx, ty, c.x, c.y, def.color); hurt(c, st.dmg * eff(t, c)); }
     return;
   }
 
@@ -766,7 +815,7 @@ function update(dt) {
   for (const w of S.waves) {
     if (!w.paid && w.done >= w.total) {
       w.paid = true;
-      const bonus = 5 + w.n;
+      const bonus = Math.round((5 + w.n) * S.goldMult);
       S.gold += bonus;
       setMsg("Wave " + w.n + " cleared! +" + bonus + " gold.");
     }
@@ -825,7 +874,7 @@ function render() {
     const { x, y } = S.hover, def = TOWERS[S.selected];
     const ok = canPlace(x, y) && S.gold >= def.cost;
     ctx.fillStyle = ok ? "rgba(160,210,255,0.2)" : "rgba(255,122,107,0.32)";
-    ctx.beginPath(); ctx.arc(x * CS + CS / 2, y * CS + CS / 2, def.range * CS, 0, Math.PI * 2); ctx.fill();
+    reachPath(S.selected, x * CS + CS / 2, y * CS + CS / 2, def.range); ctx.fill();
     ctx.globalAlpha = 0.6;
     drawTower({ type: S.selected, x, y, level: 0, busy: 0 });
     ctx.globalAlpha = 1;
@@ -834,7 +883,7 @@ function render() {
   const insp = S.inspect && S.towers.get(S.inspect);
   if (insp && insp.type) {
     ctx.strokeStyle = "rgba(159,210,255,0.95)"; ctx.setLineDash([6, 4]); ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.arc(insp.x * CS + CS / 2, insp.y * CS + CS / 2, towerStats(insp).range * CS, 0, Math.PI * 2);
+    reachPath(insp.type, insp.x * CS + CS / 2, insp.y * CS + CS / 2, towerStats(insp).range);
     ctx.stroke(); ctx.setLineDash([]); ctx.lineWidth = 1;
   }
 
@@ -881,6 +930,16 @@ function render() {
   }
 }
 
+// Outline of a tower's attack area: a circle, or a plus shape for the Lance.
+function reachPath(type, cx, cy, range) {
+  ctx.beginPath();
+  if (type !== "lance") { ctx.arc(cx, cy, range * CS, 0, Math.PI * 2); return; }
+  const r = range * CS, h = CS / 2;
+  const pts = [[-h, -r], [h, -r], [h, -h], [r, -h], [r, h], [h, h], [h, r], [-h, r], [-h, h], [-r, h], [-r, -h], [-h, -h]];
+  pts.forEach(([dx, dy], i) => (i ? ctx.lineTo(cx + dx, cy + dy) : ctx.moveTo(cx + dx, cy + dy)));
+  ctx.closePath();
+}
+
 function drawTower(t) {
   const def = TOWERS[t.type];
   const cx = t.x * CS + CS / 2, cy = t.y * CS + CS / 2;
@@ -916,7 +975,7 @@ function renderPanel() {
   $("panelTitle").innerHTML = iconSvg(t.type, 20) + " " + esc(def.name) + " <span style='margin-left:auto;color:var(--mute);font-weight:500'>level " + t.level + " of " + MAX_LEVEL + "</span>";
   const rows = [];
   if (def.dmg > 0) rows.push(stat("Damage", st.dmg.toFixed(1)));
-  rows.push(stat("Range", st.range.toFixed(1)));
+  rows.push(t.type === "lance" ? stat("Reach", (st.range - 0.5).toFixed(1) + " cells in line") : stat("Range", st.range.toFixed(1)));
   if (def.cd > 0) rows.push(stat("Reload", st.cd.toFixed(2) + " s"));
   if (t.type === "frost") rows.push(stat("Slow", Math.round((1 - st.slow) * 100) + "%"));
   if (t.type === "splash" || t.type === "mortar") rows.push(stat("Blast radius", st.radius.toFixed(1)));
@@ -940,7 +999,7 @@ function renderCreepPanel() {
   const sp = cr.speed * (cr.slowT > 0 ? cr.slowMul : 1) * (cr.cornerT > 0 ? CORNER_SLOW : 1);
   const flags = [];
   if (cr.flying) flags.push("flies");
-  if (cr.diag) flags.push("moves diagonally");
+  if (cr.diag) flags.push("squeezes through diagonal gaps");
   p.hidden = false;
   p.innerHTML = "<h3>" + esc(CREEP_INFO[cr.type].name) + "</h3><dl class='stats'>" +
     stat("Health", Math.ceil(cr.hp) + " / " + cr.maxHp) +
@@ -975,8 +1034,8 @@ function refreshUI() {
   renderCreepPanel();
   renderDetail();
   $("map").textContent = S.map.name + ".";
-  $("mapDesc").textContent = S.map.desc;
-  $("gold").textContent = S.gold;
+  $("mapDesc").textContent = S.map.desc + (S.goldMult > 1 ? " Two entrances: +50% gold from kills, wave bonuses and starting gold." : "");
+  $("gold").textContent = Math.floor(S.gold);
   $("lives").textContent = S.lives;
   $("wave").textContent = S.launched + "/" + MAX_WAVES;
   let timer = "";
@@ -1011,11 +1070,13 @@ function loadMap(idx) {
   paused = false;
   const prevSel = S ? S.selected : "pellet";
   S = {
-    map: parseMap(MAPS[idx], idx), gold: START_GOLD, lives: START_LIVES,
+    map: parseMap(MAPS[idx], idx), gold: 0, goldMult: 1, lives: START_LIVES,
     launched: 0, waves: [], queue: [], spawnT: 0, creeps: [], towers: new Map(), effects: [],
     fields: null, fields8: null, autoT: null, over: false, levelDone: false, inspect: null,
     selected: prevSel, hover: null, selCreep: null
   };
+  S.goldMult = S.map.ents.length > 1 ? TWO_IN_GOLD : 1;   // maps with two entrances pay more
+  S.gold = START_GOLD * S.goldMult;
   refreshFields();
   setMsg("Map " + (idx + 1) + ": " + S.map.name + ". Place towers, then launch wave 1. Each wave gives " + AUTO_WAIT + " s before the next one starts. " + MAX_WAVES + " waves in total.");
   refreshUI();
@@ -1096,7 +1157,7 @@ function buildCreepList() {
   }
   const note = document.createElement("div");
   note.style.margin = "8px 0 0";
-  note.textContent = "Corners: when a ground creep makes a sharp turn it slows for half a second.";
+  note.textContent = "Corners: when a ground creep turns 90 degrees or more it slows for half a second. Gentle diagonal bends do not slow it.";
   box.appendChild(note);
 }
 
