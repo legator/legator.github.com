@@ -1087,14 +1087,15 @@ function launchWave() {
   const w = { n, total: 0, done: 0, paid: false };
   S.waves.push(w);
   const ents = S.map.ents.length;
-  const add = type => { S.queue.push({ type, ent: Math.floor(Math.random() * ents), w }); w.total++; };
+  let made = 0;   // creeps per entrance so far; with two entrances every entrance gets the same creeps
+  const add = type => { S.queue.push({ type, w, ents: S.map.ents.map((_, i) => i) }); made++; w.total += ents; };
   const info = waveInfo(n);
   if (info.custom) {
     for (const e of info.custom) for (let i = 0; i < e.n; i++) add(e.type);
   } else if (info.boss) {   // a boss wave is one boss and nothing else
     add(info.boss);
   } else {
-    while (w.total < target) {
+    while (made < target) {
       const type = info.types[Math.floor(Math.random() * info.types.length)];
       if (type === "squad") { for (let i = 0; i < 4; i++) add("squad"); }
       else add(type);
@@ -1119,7 +1120,7 @@ function update(dt) {
     S.spawnT -= dt;
     if (S.spawnT <= 0) {
       const item = S.queue.shift();
-      S.creeps.push(makeCreep(item));
+      for (const e of item.ents) S.creeps.push(makeCreep({ type: item.type, ent: e, w: item.w }));   // one per entrance, at the same moment
       S.spawnT = item.type === "squad" ? 0.15 : Math.max(0.3, 0.8 - 0.02 * S.launched);
     }
   }
@@ -1610,7 +1611,7 @@ function refreshUI() {
   renderDetail();
   renderStats();
   $("map").textContent = S.map.name + ".";
-  $("mapDesc").textContent = S.map.desc + (S.goldMult > 1 ? " Two entrances: +50% gold from kills, wave bonuses and starting gold." : "");
+  $("mapDesc").textContent = S.map.desc + (S.goldMult > 1 ? " Two entrances: each one sends the same creeps at the same time (so a boss wave has two bosses), and you get +50% gold from kills, wave bonuses and starting gold." : "");
   $("gold").textContent = Math.floor(S.gold);
   $("lives").textContent = S.lives;
   $("wave").textContent = S.launched + "/" + MAX_WAVES;
