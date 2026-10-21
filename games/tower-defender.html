@@ -78,6 +78,11 @@
   .stats dt{color:var(--mute);font-size:13px}
   .stats dd{margin:0;font:600 19px/1.1 "Barlow Condensed",system-ui,sans-serif;font-variant-numeric:tabular-nums}
   .actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+  #stats{margin-top:12px}
+  .srow{display:grid;grid-template-columns:22px 70px 1fr 88px;gap:8px;align-items:center;margin-top:8px;font-size:14px}
+  .srow .bar{height:10px;background:var(--line)}
+  .srow .bar i{display:block;height:100%;background:var(--accent)}
+  .srow .val{text-align:right;font:600 16px/1 "Barlow Condensed",system-ui,sans-serif;font-variant-numeric:tabular-nums}
 
   .guide{margin-top:28px;border-top:2px solid var(--ink)}
   .guide details{border-bottom:1px solid var(--line);padding:10px 0}
@@ -87,7 +92,7 @@
   #matrix{overflow-x:auto}
   .ref table{border-collapse:collapse;margin-top:8px;font-size:13px}
   .ref th,.ref td{padding:4px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
-  .ref td.full{color:var(--good)} .ref td.part{color:var(--warn)} .ref td.no{color:var(--mute)}
+  .ref td.full{color:var(--good);font-weight:600} .ref td.mid{color:var(--ink)} .ref td.part{color:var(--warn)} .ref td.no{color:var(--mute)}
 </style>
 </head>
 <body>
@@ -112,6 +117,7 @@
     </div>
     <div class="sheet"><canvas id="c"></canvas></div>
     <div id="msg" role="status"></div>
+    <div id="stats" class="card" hidden></div>
     <p class="caption"><strong id="map"></strong> <span id="mapDesc"></span></p>
   </section>
 
@@ -143,6 +149,7 @@
     <div class="ref">
       <div>Click an empty cell to place the selected tower. Click a tower to inspect it, then upgrade or sell it. Right-click, or long-press on touch, sells a tower.</div>
       <div>Each upgrade takes the tower offline for a short time. Each wave gives you 25 s; when the timer runs out the next wave starts on its own. You can launch the next wave early.</div>
+      <div>The first 7 waves bring one creep type each (Normal, Fast, Group, Tough, Air, Decoy, Spawner). After that the waves mix types: one wave with all types, then three waves with two types, and so on. Every 5th wave adds a boss, one creep type after another: Normal, Fast, Group, Tough, Air, Decoy, Spawner, then again.</div>
       <div>Keys: 1-0 select a tower (the first ten), U upgrades the inspected tower, Esc clears the selection, Space launches the next wave, P pauses and resumes. You can place and sell towers while paused.</div>
     </div>
   </details>
@@ -168,7 +175,6 @@ const CS = 40, COLS = 13, ROWS = 13;          // square 13 x 13 grid
 const TWO_IN_GOLD = 1.5;
 const MAX_WAVES = 50, AUTO_WAIT = 25, START_LIVES = 20, START_GOLD = 100;
 const MAX_LEVEL = 5;                          // buy (level 1) + 4 upgrades
-const UPGRADE_MULT  = [1, 2, 4, 16];          // upgrade 1..4 cost this many times the tower price (a 10g tower: 10, 20, 40, 160)
 const UPGRADE_BONUS = [0.05, 0.05, 0.05, 0.20]; // power added by upgrade 1..4
 const UPGRADE_TIME  = [3, 5, 8, 12];          // seconds a tower is offline after upgrade 1..4
 const RANGE_PER_UPGRADE = 0.3;                // range and splash radius grow by this per upgrade
@@ -192,13 +198,13 @@ const TOWERS = {
   splash:  { name: "Splash",  icon: "B", cost: 30, range: 2.8, cd: 1.5, dmg: 12, color: "#c05621", air: false, ground: true,  radius: 1, desc: "Area damage around its target. Strong against groups of ground creeps; cannot hit flyers." },
   sniper:  { name: "Sniper",  icon: "R", cost: 40, range: 5.0, cd: 2.5, dmg: 70, color: "#285e61", air: true,  ground: true,  desc: "Very long range and heavy single hits, slow reload. Best along long straight routes; hits ground and air." },
   gatling: { name: "Gatling", icon: "G", cost: 25, range: 2.3, cd: 0.2, dmg: 3,  color: "#b7791f", air: true,  ground: true,  desc: "Very fast fire with low damage per shot. Good against fast creeps; hits ground and air." },
-  chain:   { name: "Chain",   icon: "C", cost: 35, range: 2.6, cd: 1.0, dmg: 14, color: "#6b46c1", air: true,  ground: true,  chain: 3, desc: "Lightning hits a target and jumps to up to 3 nearby creeps. Good on crowded routes; hits ground and air." },
+  chain:   { name: "Chain",   icon: "C", cost: 35, range: 2.6, cd: 1.0, dmg: 16, color: "#6b46c1", air: true,  ground: true,  chain: 3, desc: "Lightning hits a target and jumps to up to 3 nearby creeps. Good on crowded routes; hits ground and air." },
   poison:  { name: "Toxin",   icon: "T", cost: 25, range: 2.4, cd: 0.9, dmg: 4,  color: "#7b8b2a", air: false, ground: true,  desc: "Damage over time for 3 s; ground creeps only. Works well against slow, tough creeps." },
   flak:    { name: "Flak",    icon: "A", cost: 25, range: 3.0, cd: 0.8, dmg: 14, color: "#e53e3e", air: true,  ground: false, desc: "Anti-air only. Needed for flying creeps, which ignore the maze; useless against ground creeps." },
   mortar:  { name: "Mortar",  icon: "M", cost: 45, range: 4.0, cd: 2.2, dmg: 25, color: "#744210", air: false, ground: true,  radius: 1.5, desc: "Long-range artillery with area damage to ground creeps. Good on long routes; weak against fast creeps that leave the blast." },
   net:     { name: "Net",     icon: "N", cost: 30, range: 2.5, cd: 3.0, dmg: 0,  color: "#2c7a7b", air: false, ground: true,  desc: "Holds one ground creep still for 1 s. Stalls tough creeps in front of other towers; ground only." },
   aura:    { name: "Aura",    icon: "U", cost: 35, range: 2.0, cd: 0.5, dmg: 0,  color: "#4fd1c5", air: true,  ground: true,  slow: 0.6, desc: "Slows every creep in range, ground and air, with almost no damage. Pair it with damage towers along the route." },
-  burst:   { name: "Burst",   icon: "W", cost: 40, range: 1.6, cd: 2.0, dmg: 10, color: "#dd6b20", air: true,  ground: true,  desc: "Hits every creep in a small ring, ground and air. Strong when creeps bunch up near it." },
+  burst:   { name: "Burst",   icon: "W", cost: 40, range: 1.6, cd: 2.0, dmg: 18, color: "#dd6b20", air: true,  ground: true,  desc: "Hits every creep in a small ring, ground and air. Strong when creeps bunch up near it." },
   beacon:  { name: "Beacon",  icon: "L", cost: 30, range: 1.8, cd: 0, dmg: 0,  color: "#d53f8c", air: true,  ground: true,  buff: 0.2, desc: "Does not attack. Adds damage to every tower within range. Several beacons stack, up to 60%." },
   dynamo:  { name: "Dynamo",  icon: "D", cost: 35, range: 2.0, cd: 0, dmg: 0,  color: "#d69e2e", air: true,  ground: true,  speed: 0.25, desc: "Produces power. Does not attack. Towers within range reload 25% faster. Several dynamos stack, up to 50%." },
   lance:   { name: "Lance",   icon: "J", cost: 80, range: 2.5, cd: 0.8, dmg: 30, color: "#9b2c2c", air: true,  ground: true,  desc: "Fires only along its own row and column, up to 2 cells each way, and hits every creep on those lines. Does 66% damage to every creep type. Expensive; put it where the route runs straight past it." },
@@ -250,33 +256,47 @@ function drawIcon(k, cx, cy, size) {
   ctx.restore();
 }
 
-// Damage each tower does to each creep type (1 = full damage). Creeps not listed take DEFAULT_VS.
-const DEFAULT_VS = 0.5;
-const VS = {
-  pellet:  { normal: 1 },
-  frost:   { fast: 1, normal: 0.8 },
-  splash:  { squad: 1, splitling: 1, normal: 0.8 },
-  sniper:  { boss: 1, tough: 1 },
-  gatling: { fast: 1 },
-  chain:   { squad: 1, splitling: 1 },
-  poison:  { tough: 1, boss: 1 },
-  flak:    { flyer: 1 },
-  mortar:  { spawner: 1, tough: 1 },
-  net:     { tough: 1 },
-  aura:    { fast: 1 },
-  burst:   { squad: 1, splitling: 1 },
-  tesla:   { squad: 1, splitling: 1, fast: 1 },
-  lance:   { normal: 0.66, fast: 0.66, tough: 0.66, flyer: 0.66, squad: 0.66, spawner: 0.66, splitling: 0.66, decoy: 0.66, boss: 0.66 },
-  dynamo:  {},
-  beacon:  {}
+// Damage each tower does to each creep type (1 = full damage). Every tower has its own profile.
+// Columns: normal, fast, tough, flyer (air), squad, spawner, splitling, decoy, boss.
+const DEFAULT_VS = 0.5;   // fallback for a creep type missing from a row
+const VS_TYPES = ["normal", "fast", "tough", "flyer", "squad", "spawner", "splitling", "decoy", "boss"];
+const VS_ROWS = {
+  pellet:  [1.00, 0.66, 0.25, 0.50, 0.75, 0.66, 0.75, 0.66, 0.25],
+  frost:   [0.75, 1.00, 0.50, 0.66, 0.66, 0.50, 0.75, 0.75, 0.33],
+  splash:  [0.75, 0.33, 0.50, 0.25, 1.00, 0.75, 1.00, 0.50, 0.33],
+  sniper:  [0.33, 0.25, 1.00, 0.66, 0.25, 0.50, 0.25, 0.50, 1.00],
+  gatling: [0.66, 1.00, 0.33, 0.75, 0.50, 0.50, 0.66, 0.75, 0.25],
+  chain:   [0.66, 0.75, 0.33, 0.75, 1.00, 0.50, 0.75, 0.66, 0.33],
+  poison:  [0.50, 0.25, 1.00, 0.25, 0.33, 0.66, 0.25, 0.50, 0.75],
+  flak:    [0.25, 0.25, 0.25, 1.00, 0.25, 0.25, 0.25, 0.25, 0.25],
+  mortar:  [0.50, 0.25, 0.75, 0.25, 0.66, 1.00, 0.50, 0.33, 0.66],
+  burst:   [0.50, 0.25, 0.33, 0.66, 0.75, 1.00, 1.00, 0.33, 0.25],
+  tesla:   [0.66, 1.00, 0.25, 0.66, 0.75, 0.50, 1.00, 0.75, 0.33],
+  lance:   [0.66, 0.66, 0.66, 0.66, 0.66, 0.66, 0.66, 0.66, 0.66]
 };
+const VS = {
+  net:    { tough: 1 },    // support towers deal no damage; this only names what they are best against
+  aura:   { fast: 1 },
+  dynamo: {},
+  beacon: {}
+};
+for (const [tower, row] of Object.entries(VS_ROWS)) {
+  VS[tower] = {};
+  VS_TYPES.forEach((type, i) => { VS[tower][type] = row[i]; });
+}
 function effOf(towerType, creepType) {
   const row = VS[towerType] || {};
+  const d = CREEPS[creepType];
+  if (d && d.base) {   // a boss takes the average of its type's damage and the generic boss damage
+    const a = row[d.base] !== undefined ? row[d.base] : DEFAULT_VS;
+    const b = row.boss !== undefined ? row.boss : DEFAULT_VS;
+    return Math.round((a + b) / 2 * 100) / 100;
+  }
   return row[creepType] !== undefined ? row[creepType] : DEFAULT_VS;
 }
 function eff(t, c) { return effOf(t.type, c.type); }
 function bestOf(towerType) {
-  return Object.keys(VS[towerType] || {}).filter(k => VS[towerType][k] >= 1).map(k => CREEP_INFO[k].name).join(", ");
+  return Object.keys(VS[towerType] || {}).filter(k => VS[towerType][k] >= 1).map(k => (k === "boss" ? "bosses" : CREEP_INFO[k].name)).join(", ");
 }
 
 // Stats at the tower's current level. Upgrades add a cumulative power bonus and extra range.
@@ -298,7 +318,14 @@ function towerStats(t) {
     buff: def.buff ? def.buff * (1 + bonus) : 0
   };
 }
-function upgradeCost(t) { return TOWERS[t.type].cost * UPGRADE_MULT[t.level - 1]; }
+// Upgrades 1-3 cost 1x, 2x and 4x the tower price. Upgrade 4 costs 16x, but never more than 160 + 4x the price,
+// so expensive towers stay reachable (a 10g Pellet: 10, 20, 40, 160; an 80g Lance: 80, 160, 320, 480).
+const UPGRADE_MULT = [1, 2, 4];
+function upgradePlan(type) {
+  const price = TOWERS[type].cost;
+  return UPGRADE_MULT.map(m => price * m).concat(Math.min(16 * price, 160 + 4 * price));
+}
+function upgradeCost(t) { return upgradePlan(t.type)[t.level - 1]; }
 
 // ---------- creeps ----------
 const CREEPS = {
@@ -310,7 +337,14 @@ const CREEPS = {
   spawner:   { hp: 40,  speed: 1.8, reward: 2,  color: "#38b2ac", r: 0.34 },
   splitling: { hp: 15,  speed: 2.2, reward: 1,  color: "#81e6d9", r: 0.22 },
   decoy:     { hp: 30,  speed: 2.0, reward: 2,  color: "#b83280", r: 0.28, diag: true },
-  boss:      { hp: 600, speed: 0.9, reward: 20, color: "#1a202c", r: 0.45 }
+  // Bosses: each one is a tougher version of a creep type and keeps that type's behaviour.
+  bossNormal:  { hp: 300, speed: 1.5, reward: 12, color: "#c53030", r: 0.46, boss: true, base: "normal" },
+  bossFast:    { hp: 160, speed: 4.2, reward: 12, color: "#b7791f", r: 0.40, boss: true, base: "fast" },
+  bossGroup:   { hp: 220, speed: 1.8, reward: 14, color: "#dd6b20", r: 0.44, boss: true, base: "squad" },
+  bossTough:   { hp: 520, speed: 1.0, reward: 20, color: "#553c9a", r: 0.50, boss: true, base: "tough" },
+  bossAir:     { hp: 220, speed: 2.3, reward: 16, color: "#2b6cb0", r: 0.44, boss: true, base: "flyer", flying: true },
+  bossDecoy:   { hp: 260, speed: 1.8, reward: 16, color: "#97266d", r: 0.44, boss: true, base: "decoy", diag: true },
+  bossSpawner: { hp: 240, speed: 1.6, reward: 16, color: "#2c7a7b", r: 0.48, boss: true, base: "spawner" }
 };
 const CREEP_INFO = {
   normal:    { name: "Normal",    desc: "Plain walker. Takes the shortest route, using diagonal steps where they save distance. Any ground tower can hit it." },
@@ -321,7 +355,13 @@ const CREEP_INFO = {
   spawner:   { name: "Spawner",   desc: "When killed, splits into 4 splitlings where it died." },
   splitling: { name: "Splitling", desc: "Small child of a Spawner. Quick to kill, but it counts toward the wave." },
   decoy:     { name: "Decoy",     desc: "Cuts corners: squeezes diagonally between two towers or walls that touch at a corner, where other creeps must go around." },
-  boss:      { name: "Boss",      desc: "One per map every 10 waves. Very high health, slow, and a large reward." }
+  bossNormal:  { name: "Normal boss",  desc: "A big, sturdy walker. Comes on wave 5, then again on 40." },
+  bossFast:    { name: "Fast boss",    desc: "Runs at high speed with a lot of health. Comes on wave 10, then again on 45." },
+  bossGroup:   { name: "Group boss",   desc: "Leads an escort of 4 group creeps. Comes on wave 15, then again on 50." },
+  bossTough:   { name: "Tough boss",   desc: "Slow with huge health and a large reward. Comes on wave 20." },
+  bossAir:     { name: "Air boss",     desc: "Flies straight to its exit, ignoring the maze. Comes on wave 25." },
+  bossDecoy:   { name: "Decoy boss",   desc: "Squeezes through diagonal gaps between towers. Comes on wave 30." },
+  bossSpawner: { name: "Spawner boss", desc: "When killed, splits into 4 spawners, which split again. Comes on wave 35." }
 };
 
 // ---------- maps ----------
@@ -547,21 +587,23 @@ function stepCreep(c, dt) {
 function retire(c) { if (!c.counted) { c.counted = true; c.w.done++; } }
 
 // A Spawner splits into 4 splitlings where it dies. They count toward the wave.
-function splitCreep(c) {
+function splitCreep(c, child) {
   c.w.total += 4;
   for (let i = 0; i < 4; i++) {
-    S.creeps.push(buildCreep("splitling", c.x, c.y, c.cx, c.cy, c.exitIdx, c.allowed, c.w));
+    S.creeps.push(buildCreep(child, c.x, c.y, c.cx, c.cy, c.exitIdx, c.allowed, c.w));
   }
 }
 
-function kill(c) {
+function kill(c, by) {
   if (c.dead) return;
-  if (c.type === "spawner") splitCreep(c);
+  if (by) S.kills[by] = (S.kills[by] || 0) + 1;   // which tower type got the kill
+  if (c.type === "spawner") splitCreep(c, "splitling");
+  else if (c.type === "bossSpawner") splitCreep(c, "spawner");
   c.dead = true;
   S.gold += c.reward * S.goldMult;
   retire(c);
 }
-function hurt(c, amt) { if (c.dead) return; c.hp -= amt; if (c.hp <= 0) kill(c); }
+function hurt(c, amt, by) { if (c.dead) return; c.hp -= amt; if (c.hp <= 0) kill(c, by); }
 
 function creepOnCell(x, y) {
   return S.creeps.some(c => !c.flying && ((c.cx === x && c.cy === y) || (c.next && c.next.x === x && c.next.y === y)));
@@ -656,7 +698,7 @@ function towerFire(t, dt) {
     t.cd = st.cd;
     for (const c of inRange) {
       if (t.type === "aura") { c.slowT = Math.max(c.slowT, 0.6); c.slowMul = st.slow; }
-      else { shot(tx, ty, c.x, c.y, def.color); hurt(c, st.dmg * eff(t, c)); }
+      else { shot(tx, ty, c.x, c.y, def.color); hurt(c, st.dmg * eff(t, c), t.type); }
     }
     return;
   }
@@ -667,7 +709,7 @@ function towerFire(t, dt) {
       (Math.abs(c.y - ty) <= 0.5 && Math.abs(c.x - tx) <= st.range)));
     if (!onLine.length) return;
     t.cd = st.cd;
-    for (const c of onLine) { shot(tx, ty, c.x, c.y, def.color); hurt(c, st.dmg * eff(t, c)); }
+    for (const c of onLine) { shot(tx, ty, c.x, c.y, def.color); hurt(c, st.dmg * eff(t, c), t.type); }
     return;
   }
 
@@ -676,7 +718,7 @@ function towerFire(t, dt) {
     if (!inRange.length) return;
     t.cd = st.cd;
     inRange.sort((a, b) => Math.hypot(a.x - tx, a.y - ty) - Math.hypot(b.x - tx, b.y - ty));
-    for (const c of inRange.slice(0, st.arcs)) { shot(tx, ty, c.x, c.y, def.color); hurt(c, st.dmg * eff(t, c)); }
+    for (const c of inRange.slice(0, st.arcs)) { shot(tx, ty, c.x, c.y, def.color); hurt(c, st.dmg * eff(t, c), t.type); }
     return;
   }
 
@@ -693,14 +735,14 @@ function towerFire(t, dt) {
 
   if (t.type === "splash" || t.type === "mortar") {
     for (const c of S.creeps) {
-      if (!c.dead && !c.flying && Math.hypot(c.x - target.x, c.y - target.y) <= st.radius) hurt(c, st.dmg * eff(t, c));
+      if (!c.dead && !c.flying && Math.hypot(c.x - target.x, c.y - target.y) <= st.radius) hurt(c, st.dmg * eff(t, c), t.type);
     }
     return;
   }
   if (t.type === "chain") {
     let last = target, amt = st.dmg;
     const hit = new Set([target]);
-    hurt(target, amt * eff(t, target));
+    hurt(target, amt * eff(t, target), t.type);
     for (let j = 0; j < st.chain; j++) {
       let nxt = null, nd = 2.5;
       for (const c of S.creeps) {
@@ -711,7 +753,7 @@ function towerFire(t, dt) {
       if (!nxt) break;
       amt *= 0.8;
       shot(last.x, last.y, nxt.x, nxt.y, def.color);
-      hurt(nxt, amt * eff(t, nxt));
+      hurt(nxt, amt * eff(t, nxt), t.type);
       hit.add(nxt); last = nxt;
     }
     return;
@@ -725,29 +767,31 @@ function towerFire(t, dt) {
     target.poison = { dps: Math.max(dps, target.poison ? target.poison.dps : 0), t: 3 };
     return;
   }
-  hurt(target, st.dmg * eff(t, target));
+  hurt(target, st.dmg * eff(t, target), t.type);
   if (t.type === "frost" && !target.dead) { target.slowT = 2; target.slowMul = st.slow; }
 }
 
 // ---------- waves ----------
 // Launching never waits for the previous wave: new creeps join the queue while old ones are still moving.
 // Creep types and the wave at which each one first appears.
-const TYPE_UNLOCK = { normal: 1, fast: 2, squad: 2, tough: 3, flyer: 4, decoy: 5, spawner: 6 };
 const TYPE_LABEL = { normal: "Normal", fast: "Fast", squad: "Group", tough: "Tough", flyer: "Air", decoy: "Decoy", spawner: "Spawner" };
-// Wave pattern repeats every 6 waves:
-//   1 wave with one type, 1 wave with all types, 3 waves with two types, 1 wave with all types.
-const CYCLE = ["single", "all", "pair", "pair", "pair", "all"];
+// The first waves introduce one creep type each, in this order. After that the waves mix types.
+const INTRO = ["normal", "fast", "squad", "tough", "flyer", "decoy", "spawner"];
+// After the intro: a wave with all types, then three waves with two types, and so on.
+const MIX_CYCLE = ["all", "pair", "pair", "pair"];
+// Every 5th wave brings a boss, one creep type after another.
+const BOSS_EVERY = 5;
+const BOSS_ORDER = ["bossNormal", "bossFast", "bossGroup", "bossTough", "bossAir", "bossDecoy", "bossSpawner"];
+function bossFor(n) { return n % BOSS_EVERY === 0 ? BOSS_ORDER[(n / BOSS_EVERY - 1) % BOSS_ORDER.length] : null; }
 
-function unlockedTypes(n) { return Object.keys(TYPE_UNLOCK).filter(t => n >= TYPE_UNLOCK[t]); }
+function waveKind(n) { return n <= INTRO.length ? "single" : MIX_CYCLE[(n - INTRO.length - 1) % MIX_CYCLE.length]; }
 function shuffled(arr) { const a = arr.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
 
 // Picks the creep types used by wave n.
 function waveTypes(n) {
-  const pool = unlockedTypes(n);
-  const kind = CYCLE[(n - 1) % CYCLE.length];
-  if (kind === "single") return shuffled(pool).slice(0, 1);
-  if (kind === "pair") return shuffled(pool).slice(0, 2);
-  return pool;
+  const kind = waveKind(n);
+  if (kind === "single") return [INTRO[n - 1]];
+  return kind === "pair" ? shuffled(INTRO).slice(0, 2) : INTRO.slice();
 }
 
 function launchWave() {
@@ -760,17 +804,17 @@ function launchWave() {
   const ents = S.map.ents.length;
   const add = type => { S.queue.push({ type, ent: Math.floor(Math.random() * ents), w }); w.total++; };
   const types = waveTypes(n);
-  if (n % 10 === 0) add("boss");   // boss waves keep their boss on top of the wave's types
+  const boss = bossFor(n);   // a boss comes on top of the wave's own types
+  if (boss) { add(boss); if (boss === "bossGroup") for (let i = 0; i < 4; i++) add("squad"); }
   while (w.total < target) {
     const type = types[Math.floor(Math.random() * types.length)];
     if (type === "squad") { for (let i = 0; i < 4; i++) add("squad"); }
     else add(type);
   }
   S.autoT = AUTO_WAIT;   // each wave gives AUTO_WAIT seconds; then the next one starts on its own
-  const kind = CYCLE[(n - 1) % CYCLE.length];
   const names = types.map(t => TYPE_LABEL[t]).join(" + ");
-  const mix = kind === "all" ? "all types" : names;
-  setMsg("Wave " + n + " (" + mix + ") launched" + (S.creeps.length ? " while the previous creeps are still on the map." : "."));
+  const mix = waveKind(n) === "all" ? "all types" : names;
+  setMsg("Wave " + n + " (" + mix + ") launched" + (boss ? " with the " + CREEP_INFO[boss].name : "") + (S.creeps.length ? " while the previous creeps are still on the map." : "."));
   refreshUI();
 }
 
@@ -795,13 +839,13 @@ function update(dt) {
   for (const c of S.creeps) {
     if (c.dead) continue;
     if (c.poison && c.poison.t > 0) {
-      hurt(c, c.poison.dps * dt);
+      hurt(c, c.poison.dps * dt, "poison");
       c.poison.t -= dt;
       if (c.dead) continue;
     }
     if (stepCreep(c, dt) === "exit") {
       c.dead = true; retire(c);
-      S.lives -= 1;
+      S.lives -= 1; S.leaked++;
       if (S.lives <= 0) {
         S.lives = 0; S.over = true; S.autoT = null;
         setMsg("Game over on wave " + S.launched + ". Press Restart map to try again.");
@@ -901,7 +945,9 @@ function render() {
     if (c.slowT > 0) { ctx.strokeStyle = "#63b3ed"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI * 2); ctx.stroke(); ctx.lineWidth = 1; }
     if (c.poison && c.poison.t > 0) { ctx.strokeStyle = "#b7c93c"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(px, py, r + 2, 0, Math.PI * 2); ctx.stroke(); ctx.lineWidth = 1; }
     if (c === S.selCreep) { ctx.strokeStyle = "#fff"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(px, py, r + 5, 0, Math.PI * 2); ctx.stroke(); ctx.lineWidth = 1; }
-    const bw = CS * 0.6;
+    const isBoss = !!CREEPS[c.type].boss;
+    if (isBoss) { ctx.strokeStyle = "#f6e05e"; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(px, py, r + 3, 0, Math.PI * 2); ctx.stroke(); ctx.lineWidth = 1; }
+    const bw = CS * (isBoss ? 0.95 : 0.6);
     ctx.fillStyle = BP.ink; ctx.fillRect(px - bw / 2 - 1, py - r - 8, bw + 2, 6);
     ctx.fillStyle = "#4fd18f"; ctx.fillRect(px - bw / 2, py - r - 7, bw * Math.max(0, c.hp / c.maxHp), 4);
   }
@@ -1010,6 +1056,25 @@ function renderCreepPanel() {
     (flags.length ? "<div class='caption'>" + flags.join(", ") + "</div>" : "");
 }
 
+// End-of-map statistics: how many creeps each tower type killed.
+let statsKey = "";
+function renderStats() {
+  const box = $("stats");
+  if (!(S.over || S.levelDone)) { box.hidden = true; statsKey = ""; return; }
+  const killed = Object.values(S.kills).reduce((a, b) => a + b, 0), total = killed + S.leaked;
+  const key = S.map.idx + ":" + JSON.stringify(S.kills) + ":" + S.leaked + ":" + (S.over ? "over" : "done");
+  box.hidden = false;
+  if (key === statsKey) return;
+  statsKey = key;
+  const rows = Object.entries(S.kills).sort((a, b) => b[1] - a[1]).map(([k, n]) => {
+    const pct = killed ? Math.round(n / killed * 100) : 0;
+    return "<div class='srow'>" + iconSvg(k, 20) + "<span>" + esc(TOWERS[k].name) + "</span><div class='bar'><i style='width:" + pct + "%'></i></div><span class='val'>" + pct + "% (" + n + ")</span></div>";
+  }).join("");
+  box.innerHTML = "<h3>" + (S.over ? "Game over: statistics" : "Map cleared: statistics") + "</h3>" +
+    "<p class='caption'>Killed " + killed + " of " + total + " creeps, " + S.leaked + " got through. Share of kills by tower type:</p>" +
+    (rows || "<p class='caption'>No tower killed a creep.</p>");
+}
+
 let detailKey = "";
 function renderDetail() {
   if (detailKey === S.selected) return;
@@ -1017,7 +1082,8 @@ function renderDetail() {
   const def = TOWERS[S.selected], best = bestOf(S.selected);
   const where = def.air && def.ground ? "Hits ground and air" : (def.air ? "Hits air only" : "Hits ground only");
   $("towerDetail").innerHTML = "<h3>" + iconSvg(S.selected, 20) + " " + esc(def.name) + "<span>" + def.cost + "g</span></h3>" +
-    "<p>" + esc(def.desc) + "</p><p class='meta'>" + where + "." + (best ? " Strongest against: " + esc(best) + "." : "") + "</p>";
+    "<p>" + esc(def.desc) + "</p><p class='meta'>" + where + "." + (best ? " Strongest against: " + esc(best) + "." : "") + "</p>" +
+    "<p class='meta'>Upgrades cost " + upgradePlan(S.selected).join(", ") + " gold.</p>";
 }
 
 function setPaused(v) {
@@ -1033,6 +1099,7 @@ function refreshUI() {
   renderPanel();
   renderCreepPanel();
   renderDetail();
+  renderStats();
   $("map").textContent = S.map.name + ".";
   $("mapDesc").textContent = S.map.desc + (S.goldMult > 1 ? " Two entrances: +50% gold from kills, wave bonuses and starting gold." : "");
   $("gold").textContent = Math.floor(S.gold);
@@ -1072,6 +1139,7 @@ function loadMap(idx) {
   S = {
     map: parseMap(MAPS[idx], idx), gold: 0, goldMult: 1, lives: START_LIVES,
     launched: 0, waves: [], queue: [], spawnT: 0, creeps: [], towers: new Map(), effects: [],
+    kills: {}, leaked: 0,
     fields: null, fields8: null, autoT: null, over: false, levelDone: false, inspect: null,
     selected: prevSel, hover: null, selCreep: null
   };
@@ -1107,7 +1175,7 @@ function buildTowerList() {
     const where = def.air && def.ground ? "ground and air" : (def.air ? "air only" : "ground only");
     const best = bestOf(k);
     row.innerHTML = iconSvg(k, 18) + " ";
-    row.append(document.createTextNode(def.name + " (" + def.cost + "g, " + where + "): " + def.desc + (best ? " Best vs: " + best + "." : "")));
+    row.append(document.createTextNode(def.name + " (" + def.cost + "g, " + where + "): " + def.desc + (best ? " Best vs: " + best + "." : "") + " Upgrades cost " + upgradePlan(k).join(", ") + "g."));
     box.appendChild(row);
   }
 }
@@ -1115,11 +1183,20 @@ function buildTowerList() {
 // Table: which creep kinds each tower can hit.
 function buildMatrix() {
   const box = $("matrix");
-  const title = document.createElement("b");
-  title.textContent = "Damage each tower does to each creep. 100% is its best; others take 50%.";
-  box.appendChild(title);
-  const table = document.createElement("table");
+  const intro = document.createElement("b");
+  intro.textContent = "Damage each tower does to each creep type, as a share of its full damage. Green is its best matchup, orange is weak.";
+  box.appendChild(intro);
   const kinds = Object.keys(CREEP_INFO);
+  box.appendChild(matrixTable(kinds.filter(k => !CREEPS[k].boss)));
+  const note = document.createElement("div");
+  note.style.margin = "12px 0 0";
+  note.textContent = "Bosses take the average of their creep type's damage and each tower's boss damage:";
+  box.appendChild(note);
+  box.appendChild(matrixTable(kinds.filter(k => CREEPS[k].boss)));
+}
+
+function matrixTable(kinds) {
+  const table = document.createElement("table");
   const head = document.createElement("tr");
   const th0 = document.createElement("th"); th0.textContent = "Tower"; th0.style.textAlign = "left";
   head.appendChild(th0);
@@ -1139,12 +1216,12 @@ function buildMatrix() {
       const mult = effOf(tk, k);
       td.textContent = !hit ? "✗" : (def.dmg > 0 ? Math.round(mult * 100) + "%" : "✓");
       td.style.textAlign = "center";
-      td.className = !hit ? "no" : (mult >= 1 ? "full" : "part");
+      td.className = !hit ? "no" : (mult >= 1 ? "full" : (mult >= 0.66 ? "mid" : "part"));
       tr.appendChild(td);
     }
     table.appendChild(tr);
   }
-  box.appendChild(table);
+  return table;
 }
 
 function buildCreepList() {
