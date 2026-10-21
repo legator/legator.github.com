@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Maze Tower Game</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -37,7 +37,7 @@
   button svg{vertical-align:-3px}
 
   .game{display:grid;grid-template-columns:minmax(0,520px) minmax(0,1fr);gap:28px;align-items:start}
-  @media (max-width:860px){.game{grid-template-columns:minmax(0,1fr)}}
+
 
   .hud{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 22px;margin-bottom:10px}
   .stat{display:flex;align-items:baseline;gap:6px;color:var(--mute)}
@@ -47,16 +47,16 @@
   .timer{margin-left:auto;color:var(--mute);font-size:14px}
 
   .sheet{padding:5px;background:#0d2945;border:1px solid var(--ink)}
-  canvas{display:block;width:100%;height:auto;aspect-ratio:1/1;touch-action:none;background:#123a61;border:1px solid rgba(190,220,255,.45)}
+  canvas{display:block;width:100%;height:auto;aspect-ratio:1/1;touch-action:none;-webkit-user-select:none;user-select:none;background:#123a61;border:1px solid rgba(190,220,255,.45)}
   #msg{min-height:22px;margin:10px 0 0;font-size:15px}
   .caption{margin:6px 0 0;color:var(--mute);font-size:14px}
   .caption strong{color:var(--ink);font-weight:600}
 
   .side > * + *{margin-top:10px}
-  .run{display:grid;grid-template-columns:1fr 1.7fr;gap:8px}
+  .run{display:grid;grid-template-columns:1fr .8fr 1.5fr;gap:8px}
   .block-title{font:600 19px/1 "Barlow Condensed",system-ui,sans-serif;margin:0 0 8px}
   .pick{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
-  @media (max-width:420px){.pick{grid-template-columns:repeat(4,minmax(0,1fr))}}
+
   button.tile{position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;padding:8px 2px 6px;min-height:0}
   .tile .disc{position:relative;width:40px;height:40px;display:grid;place-items:center;color:#fff}
   .tile .nm{font-size:13px;line-height:1.1}
@@ -136,7 +136,7 @@
   .ref table{border-collapse:collapse;margin-top:8px;font-size:13px}
   .ref th,.ref td{padding:4px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
   .ref td.full{color:var(--good);font-weight:600} .ref td.mid{color:var(--ink)} .ref td.part{color:var(--warn)} .ref td.no{color:var(--mute)}
-  @media (min-width:861px){
+  @media (min-aspect-ratio: 11/10) and (min-width: 600px){
     html,body{height:100%}
     body{overflow:hidden}
     .wrap{height:100vh;height:100dvh;box-sizing:border-box;display:flex;flex-direction:column;padding:8px 16px;max-width:1180px}
@@ -161,6 +161,71 @@
     .tile .nm{font-size:12px}
     .tile .co{font-size:14px}
   }
+
+  button,select,.tile{touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+  /* Phones and tall windows: one screen, board on top, controls below */
+  @media (max-aspect-ratio: 11/10), (max-width: 599px){
+    html,body{height:100%}
+    body{overflow:hidden}
+    .wrap{height:100vh;height:100dvh;box-sizing:border-box;display:flex;flex-direction:column;padding:6px 8px calc(6px + env(safe-area-inset-bottom));max-width:none;overflow-y:auto}
+    .top{margin:0 0 6px;padding-bottom:6px;flex-wrap:nowrap;overflow-x:auto;gap:8px;flex:none}
+    h1{display:none}
+    .setup{flex-wrap:nowrap;gap:6px}
+    .setup label{white-space:nowrap;font-size:13px;gap:4px}
+    button,select{min-height:38px;padding:5px 9px}
+    select{max-width:34vw}
+    .game{display:flex;flex-direction:column;align-items:stretch;gap:6px;flex:1;min-height:0;min-width:0}
+    .game > *,.side > *{min-width:0}
+    .board{flex:none}
+    .hud{height:34px;gap:4px 14px}
+    .stat b{font-size:26px}
+    .timer{font-size:12px}
+    .next{margin:0 0 4px;height:20px;font-size:13px}
+    .sheet{width:min(100%, max(250px, calc(100dvh - 392px)));margin:0 auto}
+    #msg{height:34px;margin-top:4px;font-size:13px;line-height:1.25}
+    .side{display:flex;flex-direction:column;flex:1;min-height:0}
+    .side > * + *{margin-top:6px}
+    .run{flex:none}
+    .run{grid-template-columns:1fr .9fr 1.4fr;gap:6px}
+    .run button{min-height:40px;padding:5px 6px;font-size:13px}
+    .pick{display:flex;gap:5px;overflow-x:auto;padding-bottom:4px;scroll-snap-type:x proximity;flex:none}
+    button.tile{flex:0 0 64px;scroll-snap-align:start;padding:4px 2px 3px}
+    .tile .kb{display:none}
+    .tile .disc,.tile .disc > svg{width:30px;height:30px}
+    .tile .nm{font-size:11px}
+    .tile .co{font-size:13px}
+    .tabs{flex:none;flex-wrap:nowrap;overflow-x:auto}
+    .tabs button{flex:none;white-space:nowrap}
+    .panes{flex:1;min-height:90px;overflow:auto}
+    .uprow{grid-template-columns:54px 1fr auto}
+    .uprow button,.seg button{min-height:34px}
+    .devgrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .vs{font-size:11px}
+    .vs input{width:34px}
+    .stats{grid-template-columns:repeat(auto-fill,minmax(88px,1fr))}
+    .srow{grid-template-columns:20px 58px 1fr 70px;gap:6px}
+  }
+  /* Phones held sideways: the board on the left, controls scroll on the right */
+  @media (min-aspect-ratio: 11/10) and (max-height: 520px){
+    .wrap{padding:4px 10px}
+    .top{margin-bottom:4px;padding-bottom:4px;flex-wrap:nowrap;overflow-x:auto}
+    h1{display:none}
+    .setup{flex-wrap:nowrap}
+    .setup label{white-space:nowrap;font-size:12px}
+    .hud{height:30px;gap:2px 10px}
+    .stat span{font-size:11px}
+    .next{height:18px;font-size:12px;margin:0 0 2px}
+    #msg{height:30px;font-size:12px;margin-top:2px}
+    button,select{min-height:32px;padding:3px 8px}
+    .game{grid-template-columns:min(calc(100dvh - 120px),52vw) minmax(0,1fr);gap:12px}
+    .sheet{width:100%}
+    .side{overflow-y:auto;padding-right:2px}
+    .panes{flex:none;overflow:visible}
+    .pick{grid-template-columns:repeat(6,minmax(0,1fr))}
+    .tile .disc,.tile .disc > svg{width:26px;height:26px}
+    .tile .nm{display:none}
+    .stat b{font-size:22px}
+  }
 </style>
 </head>
 <body>
@@ -170,6 +235,7 @@
   <div class="setup">
     <label>Map <select id="mapSel" title="Choose a map"></select></label>
     <label>Difficulty <select id="diffSel" title="Difficulty"></select></label>
+    <label>Spawners <select id="spawnSel" title="How many creeps each entrance sends for every creep in the wave. More spawners: more creeps at once, but each one pays less gold."><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></label>
     <label>Mode <select id="modeSel" title="Normal: one upgrade path, every tower hits every creep. Extended: choose what to upgrade, plus targeting and creep filters."><option value="extended">Extended</option><option value="normal">Normal</option><option value="dev">Developer</option></select></label>
     <button id="soundBtn" aria-pressed="true" title="Turn sound on or off">Sound on</button>
     <button id="restartBtn">Restart map</button>
@@ -193,6 +259,7 @@
   <aside class="side" aria-label="Controls">
     <div class="run">
       <button id="pauseBtn" aria-pressed="false" title="Pause or resume (P)">Pause</button>
+      <button id="speedBtn" title="Game speed: 1x, 2x or 3x (F)">Speed 1x</button>
       <button id="launchBtn" class="primary">Launch wave</button>
     </div>
     <div class="towers">
@@ -224,13 +291,14 @@
       <div class="pane ref" data-pane="help" hidden>
         <p class="caption" style="margin-top:0"><strong id="map"></strong> <span id="mapDesc"></span></p>
 
-      <div>Click an empty cell to place the selected tower. Click a tower to inspect it, then upgrade or sell it. Right-click, or long-press on touch, sells a tower.</div>
+      <div>Click an empty cell to place the selected tower. Click a tower to inspect it, then upgrade or sell it. Right-click, or long-press on touch, sells a tower. On a phone, tap an empty cell to preview the tower and its range, tap the same cell again to place it.</div>
       <div>Sound: every tower type makes its own sound when it hits a creep, creeps pop when killed, and a boss kill is louder. Use the Sound button at the top to turn it off.</div>
       <div>Every tower has 4 upgrades. For each one you choose what to improve: damage (+10%), range (+0.3) or reload (10% faster); the 4th upgrade counts double. Support towers improve their power instead of damage. Colored dots under a tower show what you upgraded: red damage, blue range, green reload.</div>
       <div>Targeting: single-target towers shoot the creep closest to the exit by default. Before the first upgrade you can switch them to the closest creep, the furthest one, or the one with the lowest health. Pick it in the Selected tab before placing, or on the placed tower.</div>
       <div>Creep filter: a tower hits every creep type by default. Before its first upgrade you can set it to hit only one type (for example only Fast, or only Bosses); it then ignores everything else, including splash damage and slows. A colored dot on the tower shows the type it is set to.</div>
       <div>Difficulty: Easy is the baseline. Middle gives creeps +50% health and you +10% starting gold, Hard +100% and +25%, Extreme +250% and +50%.</div>
       <div>Developer mode (Mode menu) adds a Dev tab: edit tower numbers (price, damage, range, reload, radius, buffs, air/ground), creep health, speed and reward, the damage percentages, game settings, and write your own wave script. Press Run to restart the map with your numbers. Edits are saved in the browser, can be exported and imported as JSON, and are ignored in the other modes.</div>
+      <div>Speed: the Speed button (or F) cycles the game through 1x, 2x and 3x, handy for long runs. Spawners (1 to 4, header menu): every entrance sends that many creeps for each creep in the wave and the stream is faster, but each kill pays less gold (100%, 75%, 67%, 62%). Changing it restarts the map.</div>
       <div>Mode: Extended (default) lets you choose what each upgrade improves and set targeting and creep filters. Normal is the simple version: one Upgrade button that adds power and range, and every tower hits every creep type. Changing the mode restarts the map.</div>
       <div>Each upgrade takes the tower offline for a short time. Each wave gives you 25 s; when the timer runs out the next wave starts on its own. You can launch the next wave early.</div>
       <div>Waves come in blocks of 9: eight regular waves, then a boss wave. In the first block each wave brings one creep type (Normal, Fast, Group, Air, Tough, Decoy, Spawner) and the 8th wave mixes them all. Each later block mixes one more type per wave: two types in the second block, three in the third, and so on. A boss wave has only the boss. Bosses come in turn: Normal on wave 9, Fast on 18, Group on 27, Air on 36, Tough on 45, Decoy on 54, and Spawner on 63, the last wave. Bosses pay a lot of gold.</div>
@@ -269,7 +337,10 @@ const ONLY = { all: "All types", normal: "Normal", fast: "Fast", squad: "Group",
 const TARGETERS = ["pellet", "frost", "splash", "sniper", "gatling", "chain", "poison", "flak", "mortar", "net", "aura", "burst", "lance", "tesla"];   // everything that attacks or affects creeps
 const creepGroup = c => (CREEPS[c.type].boss ? "boss" : c.type);
 const CLASSIC_BONUS = [0.05, 0.05, 0.05, 0.20]; // Normal mode: power added by upgrade 1..4, plus 0.3 range each
-let extended = true;                           // false = Normal mode
+let extended = true;
+let gameSpeed = 1;                             // 1, 2 or 3 simulation steps per frame
+let spawners = 1;                              // creeps sent per entrance for each creep in a wave
+const spawnGold = n => (n + 1) / (2 * n);      // gold per kill: 1, .75, .67, .625 for 1..4 spawners                           // false = Normal mode
 let buildOnly = "all";                         // creep type the next tower you place will hit
 let buildMode = "first";                       // targeting for the next tower you place
 const UPGRADE_TIME  = [3, 5, 8, 12];          // seconds a tower is offline after upgrade 1..4
@@ -460,8 +531,8 @@ function upgradeCost(t) { return upgradePlan(t.type)[t.level - 1]; }
 const CREEPS = {
   normal:    { hp: 30,  speed: 2.0, reward: 1,  color: "#e53e3e", r: 0.30 },
   fast:      { hp: 18,  speed: 4.5, reward: 1,  color: "#d69e2e", r: 0.25 },
-  tough:     { hp: 60,  speed: 1.3, reward: 3,  color: "#6b46c1", r: 0.36 },
-  flyer:     { hp: 25,  speed: 2.6, reward: 2,  color: "#63b3ed", r: 0.27, flying: true },
+  tough:     { hp: 42,  speed: 1.3, reward: 3,  color: "#6b46c1", r: 0.36 },
+  flyer:     { hp: 16,  speed: 2.6, reward: 2,  color: "#63b3ed", r: 0.27, flying: true },
   squad:     { hp: 15,  speed: 2.0, reward: 1,  color: "#f6ad55", r: 0.24 },
   spawner:   { hp: 40,  speed: 1.8, reward: 2,  color: "#38b2ac", r: 0.34 },
   splitling: { hp: 15,  speed: 2.2, reward: 1,  color: "#81e6d9", r: 0.22 },
@@ -521,6 +592,9 @@ const MAPS = [
     rows: emptyRows([LEFT, TOP], [RIGHT, BOTTOM]) }
 ];
 
+// Creep health per map. Two-entrance maps send twice the creeps, so their multiplier is lower than the old 1 + 0.3 x map number:
+// measured as creep health per gold earned, this keeps each map a little harder than the one before it.
+const MAP_HP = [1.0, 1.1, 1.3, 1.5];
 function parseMap(def, idx) {
   const walls = new Set(), exits = [];
   def.rows.forEach((row, y) => {
@@ -532,7 +606,7 @@ function parseMap(def, idx) {
   });
   const exitIdx = p => exits.findIndex(e => e.x === p[0] && e.y === p[1]);
   const ents = def.flows.map(f => ({ x: f.from[0], y: f.from[1], exits: f.to.map(exitIdx) }));
-  return { idx, name: def.name, desc: def.desc, walls, ents, exits, hpMult: 1 + 0.3 * idx };
+  return { idx, name: def.name, desc: def.desc, walls, ents, exits, hpMult: MAP_HP[idx] };
 }
 
 // ---------- runtime setup ----------
@@ -844,9 +918,9 @@ function kill(c, by) {
   const isBoss = !!CREEPS[c.type].boss;
   Sound.kill(isBoss);
   FX.burst(c, isBoss);
-  FX.text(c.x, c.y - 0.3, "+" + Math.round(c.reward * S.goldMult), "#f6c445");
+  FX.text(c.x, c.y - 0.3, "+" + Math.max(1, Math.round(c.reward * S.goldMult * spawnGold(spawners))), "#f6c445");
   if (isBoss) S.shake = 0.5;
-  S.gold += c.reward * S.goldMult;
+  S.gold += c.reward * S.goldMult * spawnGold(spawners);
   retire(c);
 }
 function hurt(c, amt, by) {
@@ -1088,7 +1162,10 @@ function launchWave() {
   S.waves.push(w);
   const ents = S.map.ents.length;
   let made = 0;   // creeps per entrance so far; with two entrances every entrance gets the same creeps
-  const add = type => { S.queue.push({ type, w, ents: S.map.ents.map((_, i) => i) }); made++; w.total += ents; };
+  const add = type => {
+    for (let i = 0; i < spawners; i++) S.queue.push({ type, w, ents: S.map.ents.map((_, k) => k) });
+    made++; w.total += ents * spawners;
+  };
   const info = waveInfo(n);
   if (info.custom) {
     for (const e of info.custom) for (let i = 0; i < e.n; i++) add(e.type);
@@ -1121,7 +1198,7 @@ function update(dt) {
     if (S.spawnT <= 0) {
       const item = S.queue.shift();
       for (const e of item.ents) S.creeps.push(makeCreep({ type: item.type, ent: e, w: item.w }));   // one per entrance, at the same moment
-      S.spawnT = item.type === "squad" ? 0.15 : Math.max(0.3, 0.8 - 0.02 * S.launched);
+      S.spawnT = (item.type === "squad" ? 0.15 : Math.max(0.3, 0.8 - 0.02 * S.launched)) / spawners;   // more spawners: a faster stream
     }
   }
 
@@ -1611,7 +1688,7 @@ function refreshUI() {
   renderDetail();
   renderStats();
   $("map").textContent = S.map.name + ".";
-  $("mapDesc").textContent = S.map.desc + (S.goldMult > 1 ? " Two entrances: each one sends the same creeps at the same time (so a boss wave has two bosses), and you get +50% gold from kills, wave bonuses and starting gold." : "");
+  $("mapDesc").textContent = S.map.desc + (S.goldMult > 1 ? " Two entrances: each one sends the same creeps at the same time (so a boss wave has two bosses). You get double lives and +50% gold from kills, wave bonuses and starting gold." : "");
   $("gold").textContent = Math.floor(S.gold);
   $("lives").textContent = S.lives;
   $("wave").textContent = S.launched + "/" + MAX_WAVES;
@@ -1661,7 +1738,8 @@ function loadMap(idx) {
   const cw = customWaves();
   MAX_WAVES = cw ? cw.length : 63;
   S = {
-    map: parseMap(MAPS[idx], idx), gold: 0, goldMult: 1, lives: START_LIVES,
+    map: parseMap(MAPS[idx], idx), gold: 0, goldMult: 1, lives: START_LIVES * MAPS[idx].flows.length,   // two entrances send twice the creeps, so you get twice the lives
+   
     launched: 0, waves: [], queue: [], spawnT: 0, creeps: [], towers: new Map(), fx: [], time: 0, shake: 0, flash: 0, routePaths: [],
     kills: {}, leaked: 0, byType: {}, waveInfoCache: {}, custom: customWaves(),
     fields: null, fields8: null, autoT: null, over: false, levelDone: false, inspect: null,
@@ -1852,20 +1930,33 @@ canvas.addEventListener("contextmenu", e => {
   const c = cellFromEvent(e); if (c) sellTower(c.x, c.y);
 });
 
-// touch: a tap places or inspects; a long press (about 0.5 s) sells
-let pressTimer = null, longPressed = false;
+// touch: a tap on an empty cell previews the tower and its range; tapping the same cell again places it.
+// Tapping a tower or a creep inspects it; a long press (about 0.5 s) sells.
+let pressTimer = null, longPressed = false, pending = null, touchMoved = false;
 canvas.addEventListener("touchstart", e => {
   const c = cellFromEvent(e.touches[0]);
-  longPressed = false;
-  pressTimer = setTimeout(() => { longPressed = true; if (c) sellTower(c.x, c.y); }, 500);
+  longPressed = false; touchMoved = false;
+  pressTimer = setTimeout(() => { longPressed = true; if (c) { sellTower(c.x, c.y); pending = null; if (S) S.hover = null; } }, 500);
 }, { passive: true });
+canvas.addEventListener("touchmove", () => { touchMoved = true; clearTimeout(pressTimer); }, { passive: true });
 canvas.addEventListener("touchend", e => {
   clearTimeout(pressTimer);
-  if (longPressed || !S || S.over || S.levelDone) return;
+  e.preventDefault();   // no extra mouse click after a tap
+  if (longPressed || touchMoved || !S || S.over || S.levelDone) return;
   const c = cellFromEvent(e.changedTouches[0]);
-  if (c) selectOrPlace(c);
-  S.hover = null;
-});
+  if (!c) return;
+  const k = key(c.x, c.y);
+  const empty = !creepAt(c) && !S.towers.has(k) && !isWall(c.x, c.y);
+  if (empty && !(pending && pending.x === c.x && pending.y === c.y)) {   // first tap: preview
+    pending = { x: c.x, y: c.y }; S.hover = pending; S.selCreep = null; S.inspect = null;
+    setMsg("Tap again to place " + TOWERS[S.selected].name + ", or tap elsewhere to cancel."); refreshUI();
+    return;
+  }
+  pending = null; S.hover = null;
+  selectOrPlace(c);
+}, { passive: false });
+// picking another tower or tapping a button cancels a pending preview
+document.addEventListener("click", e => { if (pending && !e.target.closest("canvas")) { pending = null; if (S) S.hover = null; } });
 
 document.addEventListener("keydown", e => {
   if (!S) return;
@@ -1878,6 +1969,23 @@ document.addEventListener("keydown", e => {
 });
 $("launchBtn").addEventListener("click", launchWave);
 $("pauseBtn").addEventListener("click", togglePause);
+function setSpeed(v) {
+  gameSpeed = v;
+  $("speedBtn").textContent = "Speed " + v + "x";
+  $("speedBtn").setAttribute("aria-pressed", v > 1 ? "true" : "false");
+}
+$("speedBtn").addEventListener("click", () => setSpeed(gameSpeed % 3 + 1));
+document.addEventListener("keydown", e => { if (e.key === "f" || e.key === "F") setSpeed(gameSpeed % 3 + 1); });
+(function () {
+  const sel = $("spawnSel");
+  try { const v = parseInt(localStorage.getItem("mtd-spawn"), 10); if (v >= 1 && v <= 4) spawners = v; } catch (e) { /* ignore */ }
+  sel.value = String(spawners);
+  sel.addEventListener("change", () => {
+    spawners = parseInt(sel.value, 10);
+    try { localStorage.setItem("mtd-spawn", String(spawners)); } catch (e) { /* ignore */ }
+    loadMap(S.map.idx);   // a new spawner count starts the map again
+  });
+})();
 function refreshSoundBtn() {
   $("soundBtn").textContent = Sound.enabled() ? "Sound on" : "Sound off";
   $("soundBtn").setAttribute("aria-pressed", Sound.enabled() ? "true" : "false");
@@ -2104,8 +2212,10 @@ $("devPane").addEventListener("click", e => {
 function loop(now) {
   const dt = Math.min(0.05, (now - lastT) / 1000 || 0);
   lastT = now;
-  update(dt);
-  if (!paused) updateFx(dt);
+  for (let i = 0; i < gameSpeed; i++) {   // faster speeds run several normal-size steps per frame
+    update(dt);
+    if (!paused) updateFx(dt);
+  }
   render();
   uiAcc += dt;
   if (uiAcc > 0.2) { uiAcc = 0; refreshUI(); }
