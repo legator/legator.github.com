@@ -296,7 +296,7 @@
       <div>Every tower has 4 upgrades. For each one you choose what to improve: damage (+10%), range (+0.3) or reload (10% faster); the 4th upgrade counts double. Support towers improve their power instead of damage. Colored dots under a tower show what you upgraded: red damage, blue range, green reload.</div>
       <div>Targeting: single-target towers shoot the creep closest to the exit by default. Before the first upgrade you can switch them to the closest creep, the furthest one, or the one with the lowest health. Pick it in the Selected tab before placing, or on the placed tower.</div>
       <div>Creep filter: a tower hits every creep type by default. Before its first upgrade you can set it to hit only one type (for example only Fast, or only Bosses); it then ignores everything else, including splash damage and slows. A colored dot on the tower shows the type it is set to.</div>
-      <div>Difficulty: Easy is the baseline. Middle gives creeps +50% health and you +10% starting gold, Hard +100% and +25%, Extreme +250% and +50%.</div>
+      <div>Difficulty: Easy is the baseline. Middle gives creeps +25% health and you +10% starting gold and +10% gold per kill, Hard +100% health, +25% start gold, +50% per kill, Extreme +250% health, +50% start gold, double gold per kill.</div>
       <div>Developer mode (Mode menu) adds a Dev tab: edit tower numbers (price, damage, range, reload, radius, buffs, air/ground), creep health, speed and reward, the damage percentages, game settings, and write your own wave script. Press Run to restart the map with your numbers. Edits are saved in the browser, can be exported and imported as JSON, and are ignored in the other modes.</div>
       <div>Speed: the Speed button (or F) cycles the game through 1x, 2x and 3x, handy for long runs. Spawners (1 to 4, header menu): every entrance sends that many creeps for each creep in the wave and the stream is faster, but each kill pays less gold (100%, 75%, 67%, 62%). Changing it restarts the map.</div>
       <div>Mode: Extended (default) lets you choose what each upgrade improves and set targeting and creep filters. Normal is the simple version: one Upgrade button that adds power and range, and every tower hits every creep type. Changing the mode restarts the map.</div>
@@ -332,9 +332,9 @@ const COMP_COLOR = { dmg: "#ff7a6b", rng: "#62b6ff", rel: "#6ee7a0" };
 const COMP_NAME = { dmg: "Damage", rng: "Range", rel: "Reload" };
 const MODES = { first: "Leading", closest: "Closest", far: "Furthest", weak: "Lowest HP" };
 const MODE_HINT = { first: "the creep closest to the exit", closest: "the creep closest to the tower", far: "the creep furthest from the tower", weak: "the creep with the lowest health" };
-const SINGLE_TARGET = ["pellet", "frost", "splash", "sniper", "gatling", "chain", "poison", "flak", "mortar", "net"];
+const SINGLE_TARGET = ["pellet", "frost", "splash", "sniper", "gatling", "chain", "poison", "plague", "flak", "mortar", "net"];
 const ONLY = { all: "All types", normal: "Normal", fast: "Fast", squad: "Group", flyer: "Air", tough: "Tough", decoy: "Decoy", spawner: "Spawner", splitling: "Splitling", boss: "Bosses" };
-const TARGETERS = ["pellet", "frost", "splash", "sniper", "gatling", "chain", "poison", "flak", "mortar", "net", "aura", "burst", "lance", "tesla"];   // everything that attacks or affects creeps
+const TARGETERS = ["pellet", "frost", "splash", "sniper", "gatling", "chain", "poison", "plague", "flak", "mortar", "net", "aura", "burst", "lance", "tesla"];   // everything that attacks or affects creeps
 const creepGroup = c => (CREEPS[c.type].boss ? "boss" : c.type);
 const CLASSIC_BONUS = [0.05, 0.05, 0.05, 0.20]; // Normal mode: power added by upgrade 1..4, plus 0.3 range each
 let extended = true;
@@ -347,12 +347,12 @@ const UPGRADE_TIME  = [3, 5, 8, 12];          // seconds a tower is offline afte
 const CORNER_TIME = 0.5, CORNER_SLOW = 0.4;   // a sharp turn slows ground creeps briefly
 const DIRS  = [[1,0],[-1,0],[0,1],[0,-1]];
 const DIRS8 = DIRS.concat([[1,1],[1,-1],[-1,1],[-1,-1]]);
-// Health multipliers: Middle +50%, Hard +100%, Extreme +250%.
+// Creep health multiplier, starting gold and gold per kill / wave bonus. Tuned with the balance bot: it reaches about wave 47 / 37 / 26 / 16.
 const DIFFICULTY = {
-  easy:    { name: "Easy",    mult: 1,   gold: 1 },
-  middle:  { name: "Middle",  mult: 1.5, gold: 1.10 },
-  hard:    { name: "Hard",    mult: 2,   gold: 1.25 },
-  extreme: { name: "Extreme", mult: 3.5, gold: 1.50 }
+  easy:    { name: "Easy",    mult: 1,    gold: 1,    reward: 1 },
+  middle:  { name: "Middle",  mult: 1.25, gold: 1.10, reward: 1.10 },
+  hard:    { name: "Hard",    mult: 2,    gold: 1.25, reward: 1.50 },
+  extreme: { name: "Extreme", mult: 3.5,  gold: 1.50, reward: 2.00 }
 };
 let difficulty = "easy";
 
@@ -374,6 +374,7 @@ const TOWERS = {
   beacon:  { name: "Beacon",  icon: "L", cost: 30, range: 1.8, cd: 0, dmg: 0,  color: "#d53f8c", air: true,  ground: true,  buff: 0.2, desc: "Does not attack. Adds damage to every tower within range. Several beacons stack, up to 60%." },
   dynamo:  { name: "Dynamo",  icon: "D", cost: 35, range: 2.0, cd: 0, dmg: 0,  color: "#d69e2e", air: true,  ground: true,  speed: 0.25, desc: "Produces power. Does not attack. Towers within range reload 25% faster. Several dynamos stack, up to 50%." },
   lance:   { name: "Lance",   icon: "J", cost: 80, range: 2.5, cd: 1.5, dmg: 30, color: "#9b2c2c", air: true,  ground: true,  desc: "Fires only along its own row and column, up to 2 cells each way, and hits every creep on those lines. Does 66% damage to every creep type. Expensive; put it where the route runs straight past it." },
+  plague:  { name: "Plague",  icon: "V", cost: 40, range: 2.6, cd: 1.4, dmg: 2.5, duration: 6, color: "#a3e635", air: true,  ground: true,  desc: "Infects a creep with a disease that drains health every second for 6 s. A creep that is already infected cannot be infected again, so the tower picks a healthy one; once the infection wears off the creep can catch it once more. Strong against creeps that live long, like tough ones." },
   tesla:   { name: "Tesla",   icon: "E", cost: 40, range: 2.6, cd: 1.2, dmg: 7,  color: "#4299e1", air: true,  ground: true,  arcs: 6, desc: "Electric arcs strike up to 6 creeps in range at once. Good against groups and fast creeps; hits ground and air." }
 };
 const TOWER_KEYS = Object.keys(TOWERS);
@@ -389,6 +390,7 @@ const ICONS = {
   gatling: { f: "M3 8h12v2.5H3zM3 13h12v2.5H3zM15 6h6v10h-6z" },
   chain:   { f: "M13 2L5 14h6l-1 8 8-12h-6z" },
   poison:  { f: "M12 3C12 3 6 10 6 14.5a6 6 0 0 0 12 0C18 10 12 3 12 3z" },
+  plague:  { f: "M12 7.5a4.5 4.5 0 1 0 0 9a4.5 4.5 0 1 0 0-9zM12 1.2a1.6 1.6 0 1 0 0 3.2a1.6 1.6 0 1 0 0-3.2zM12 19.6a1.6 1.6 0 1 0 0 3.2a1.6 1.6 0 1 0 0-3.2zM1.2 12a1.6 1.6 0 1 0 3.2 0a1.6 1.6 0 1 0-3.2 0zM19.6 12a1.6 1.6 0 1 0 3.2 0a1.6 1.6 0 1 0-3.2 0z", s: "M12 4.4V7.5M12 16.5v3.1M4.4 12h3.1M16.5 12h3.1" },
   flak:    { f: "M12 2l5.5 10h-11z M4 16h16v2.5H4z" },
   mortar:  { f: "M5 13l8-8 3 3-8 8z M3 17h13v4H3z" },
   net:     { s: "M3 3h18v18H3zM3 9h18M3 15h18M9 3v18M15 3v18" },
@@ -408,7 +410,7 @@ for (const k of Object.keys(ICONS)) {
 // Every tower has its own silhouette: n = corners (0 = circle), rot = degrees, inner = star depth (1 = plain polygon).
 const SHAPES = {
   pellet: { n: 0 }, frost: { n: 6 }, splash: { n: 8 }, sniper: { n: 4, rot: 45 }, gatling: { n: 4 },
-  chain: { n: 3 }, poison: { n: 5 }, flak: { n: 3, rot: 180 }, mortar: { n: 7 }, net: { n: 4, rot: 45, inner: 0.75 },
+  chain: { n: 3 }, poison: { n: 5 }, plague: { n: 5, rot: 36 }, flak: { n: 3, rot: 180 }, mortar: { n: 7 }, net: { n: 4, rot: 45, inner: 0.75 },
   aura: { n: 10, inner: 0.88 }, burst: { n: 8, inner: 0.5 }, beacon: { n: 5, inner: 0.5 }, dynamo: { n: 8, inner: 0.75 },
   lance: { n: 4, inner: 0.55 }, tesla: { n: 6, inner: 0.5 }
 };
@@ -463,6 +465,7 @@ const VS_ROWS = {
   gatling: [0.66, 1.00, 0.33, 0.75, 0.50, 0.50, 0.66, 0.75, 0.25],
   chain:   [0.66, 0.75, 0.33, 0.75, 1.00, 0.50, 0.75, 0.66, 0.33],
   poison:  [0.50, 0.25, 1.00, 0.25, 0.33, 0.66, 0.25, 0.50, 0.75],
+  plague:  [0.75, 0.50, 1.00, 0.66, 0.50, 0.75, 0.33, 0.66, 0.50],
   flak:    [0.25, 0.25, 0.25, 1.00, 0.25, 0.25, 0.25, 0.25, 0.25],
   mortar:  [0.50, 0.25, 0.75, 0.25, 0.66, 1.00, 0.50, 0.33, 0.66],
   burst:   [0.50, 0.25, 0.33, 0.66, 0.75, 1.00, 1.00, 0.33, 0.25],
@@ -594,7 +597,7 @@ const MAPS = [
 
 // Creep health per map. Two-entrance maps send twice the creeps, so their multiplier is lower than the old 1 + 0.3 x map number:
 // measured as creep health per gold earned, this keeps each map a little harder than the one before it.
-const MAP_HP = [1.0, 1.1, 1.3, 1.5];
+const MAP_HP = [1.0, 1.1, 1.15, 1.25];
 function parseMap(def, idx) {
   const walls = new Set(), exits = [];
   def.rows.forEach((row, y) => {
@@ -672,6 +675,7 @@ const Sound = (() => {
     gatling: () => tone({ type: "square", f0: 300, f1: 220, dur: 0.025, vol: 0.06 }),
     chain:   () => tone({ type: "sawtooth", f0: 1400, f1: 300, dur: 0.11, vol: 0.10 }),
     poison:  () => tone({ type: "triangle", f0: 340, f1: 210, dur: 0.13, vol: 0.12 }),
+    plague:  () => { tone({ type: "sine", f0: 180, f1: 520, dur: 0.22, vol: 0.10 }); tone({ type: "triangle", f0: 90, f1: 70, dur: 0.3, vol: 0.10, delay: 0.05 }); },
     flak:    () => { noise({ dur: 0.09, vol: 0.16, f: 1500 }); tone({ type: "sawtooth", f0: 600, f1: 250, dur: 0.09, vol: 0.08 }); },
     mortar:  () => { tone({ f0: 130, f1: 40, dur: 0.35, vol: 0.30 }); noise({ dur: 0.25, vol: 0.20, f: 500 }); },
     burst:   () => { noise({ dur: 0.14, vol: 0.18, f: 1200 }); tone({ type: "triangle", f0: 320, f1: 90, dur: 0.18, vol: 0.16 }); },
@@ -679,7 +683,7 @@ const Sound = (() => {
     tesla:   () => { tone({ type: "sawtooth", f0: 1700, f1: 400, dur: 0.07, vol: 0.08 }); tone({ type: "square", f0: 900, f1: 500, dur: 0.05, vol: 0.05, delay: 0.03 }); }
   };
   // Minimum time between two plays of the same sound, so a volley or a damage-over-time tick is one sound, not a buzz.
-  const GAP = { gatling: 45, poison: 220, frost: 90, chain: 90, tesla: 90, lance: 90, kill: 35, boss: 400 };
+  const GAP = { gatling: 45, poison: 220, plague: 650, frost: 90, chain: 90, tesla: 90, lance: 90, kill: 35, boss: 400 };
 
   function once(name, fn) {
     if (!enabled) return;
@@ -835,7 +839,7 @@ function buildCreep(type, x, y, cx, cy, exitIdx, allowed, w) {
     type, hp, maxHp: hp, speed: d.speed, reward: d.boss ? Math.round(d.reward * (1 + w.n / 10)) : d.reward, color: d.color, r: d.r,   // bosses pay more on later waves
    
     flying: !!d.flying, diag: !!d.diag, x, y, cx, cy, exitIdx: ex, allowed, next: null, dir: null,
-    cornerT: 0, slowT: 0, slowMul: 1, poison: null, dead: false, w, counted: false,
+    cornerT: 0, slowT: 0, slowMul: 1, poison: null, plague: null, dead: false, w, counted: false,
     target: { x: exit.x + 0.5, y: exit.y + 0.5 }
   };
 }
@@ -929,7 +933,7 @@ function hurt(c, amt, by) {
   if (by) {
     Sound.hit(by);   // every tower type has its own hit sound
     c.flashT = 0.08;
-    if (by !== "poison") FX.spark(c.x, c.y, TOWERS[by] ? TOWERS[by].color : "#ffffff", by === "gatling" ? 1 : 3);
+    if (by !== "poison" && by !== "plague") FX.spark(c.x, c.y, TOWERS[by] ? TOWERS[by].color : "#ffffff", by === "gatling" ? 1 : 3);
   }
   if (c.hp <= 0) kill(c, by);
 }
@@ -1064,6 +1068,7 @@ function towerFire(t, dt) {
   let target = null, best = Infinity;
   for (const c of S.creeps) {
     if (c.dead || !(canHit(def, c) && ok(c))) continue;
+    if (t.type === "plague" && c.plague) continue;   // already infected: a creep can only be infected once
     if (Math.hypot(c.x - tx, c.y - ty) > st.range) continue;
     const d = Math.hypot(c.x - tx, c.y - ty);
     let score;
@@ -1106,6 +1111,12 @@ function towerFire(t, dt) {
   }
   if (t.type === "net") {
     target.slowT = Math.max(target.slowT, st.stun); target.slowMul = 0;
+    return;
+  }
+  if (t.type === "plague") {
+    target.plague = { dps: st.dmg * eff(t, target), t: def.duration, spore: 0 };   // drains health for def.duration seconds, then it can be infected again
+    FX.ring(target.x, target.y, 0.1, 0.8, def.color, 0.4); FX.spark(target.x, target.y, def.color, 8);
+    Sound.hit("plague");
     return;
   }
   if (t.type === "poison") {
@@ -1175,6 +1186,7 @@ function launchWave() {
     while (made < target) {
       const type = info.types[Math.floor(Math.random() * info.types.length)];
       if (type === "squad") { for (let i = 0; i < 4; i++) add("squad"); }
+      else if (type === "spawner") { add(type); made += 4; }   // a spawner brings 4 splitlings later, so it counts as 5 creeps of the wave
       else add(type);
     }
   }
@@ -1204,6 +1216,14 @@ function update(dt) {
 
   for (const c of S.creeps) {
     if (c.dead) continue;
+    if (c.plague) {
+      hurt(c, c.plague.dps * dt, "plague");
+      c.plague.spore -= dt;
+      if (c.plague.spore <= 0 && !c.dead) { c.plague.spore = 0.5; FX.spark(c.x, c.y, "#a3e635", 1); }
+      c.plague.t -= dt;
+      if (c.plague.t <= 0) c.plague = null;   // recovered: it can be infected again
+      if (c.dead) continue;
+    }
     if (c.poison && c.poison.t > 0) {
       hurt(c, c.poison.dps * dt, "poison");
       c.poison.t -= dt;
@@ -1431,6 +1451,11 @@ function renderBoard() {
     ctx.strokeStyle = c.flying ? "#fff" : "rgba(230,241,250,0.85)"; ctx.lineWidth = c.flying ? 2 : 1.5; ctx.stroke(); ctx.lineWidth = 1;
     if (c.diag) { ctx.strokeStyle = "#fbb6ce"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(px, py, r + 2, 0, Math.PI * 2); ctx.stroke(); ctx.lineWidth = 1; }
     if (c.slowT > 0) { ctx.strokeStyle = "#63b3ed"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI * 2); ctx.stroke(); ctx.lineWidth = 1; }
+    if (c.plague) {   // infected: a green tint and a dashed ring that spins
+      ctx.fillStyle = "rgba(163,230,53,0.38)"; ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI * 2); ctx.fill();
+      ctx.globalAlpha = Math.min(1, c.plague.t / 1.5 + 0.25); ctx.strokeStyle = "#a3e635"; ctx.lineWidth = 2; ctx.setLineDash([3, 3]); ctx.lineDashOffset = -S.time * 12;
+      ctx.beginPath(); ctx.arc(px, py, r + 3, 0, Math.PI * 2); ctx.stroke(); ctx.setLineDash([]); ctx.lineWidth = 1; ctx.globalAlpha = 1;
+    }
     if (c.poison && c.poison.t > 0) { ctx.strokeStyle = "#b7c93c"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(px, py, r + 2, 0, Math.PI * 2); ctx.stroke(); ctx.lineWidth = 1; }
     if (c === S.selCreep) { ctx.strokeStyle = "#fff"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(px, py, r + 5, 0, Math.PI * 2); ctx.stroke(); ctx.lineWidth = 1; }
     const isBoss = !!CREEPS[c.type].boss;
@@ -1540,7 +1565,7 @@ function renderPanel() {
   const comps = ["dmg", "rng", "rel"].filter(c => canUpgrade(t, c));
   const counts = c => t.picks.filter(x => x === c).length;
   const rows = comps.map(c => {
-    const label = c === "dmg" && def.dmg <= 0 ? "Power" : COMP_NAME[c];
+    const label = c === "dmg" && def.dmg <= 0 ? "Power" : (c === "dmg" && t.type === "plague" ? "Drain/s" : COMP_NAME[c]);
     const pips = "<span class='pips'>" + t.picks.map(x => "<i style='background:" + (x === c ? COMP_COLOR[c] : "var(--line)") + "'></i>").join("") + "</span>";
     const next = maxed ? "" : " <em>&rarr; " + compValue(t, c, towerStats(t, modAfter(t, c))) + "</em>";
     return "<div class='uprow'><span class='lab' style='color:" + COMP_COLOR[c] + "'>" + label + "</span><span class='val'>" + compValue(t, c, st) + next + (counts(c) ? " <small>x" + counts(c) + "</small>" : "") + "</span>" +
@@ -1688,7 +1713,7 @@ function refreshUI() {
   renderDetail();
   renderStats();
   $("map").textContent = S.map.name + ".";
-  $("mapDesc").textContent = S.map.desc + (S.goldMult > 1 ? " Two entrances: each one sends the same creeps at the same time (so a boss wave has two bosses). You get double lives and +50% gold from kills, wave bonuses and starting gold." : "");
+  $("mapDesc").textContent = S.map.desc + (S.map.ents.length > 1 ? " Two entrances: each one sends the same creeps at the same time (so a boss wave has two bosses). You get double lives and +50% gold from kills, wave bonuses and starting gold." : "");
   $("gold").textContent = Math.floor(S.gold);
   $("lives").textContent = S.lives;
   $("wave").textContent = S.launched + "/" + MAX_WAVES;
@@ -1745,7 +1770,7 @@ function loadMap(idx) {
     fields: null, fields8: null, autoT: null, over: false, levelDone: false, inspect: null,
     selected: prevSel, hover: null, selCreep: null
   };
-  S.goldMult = S.map.ents.length > 1 ? TWO_IN_GOLD : 1;   // maps with two entrances pay more
+  S.goldMult = (S.map.ents.length > 1 ? TWO_IN_GOLD : 1) * DIFFICULTY[difficulty].reward;   // two entrances pay more; harder levels pay more per kill
   S.gold = Math.round(START_GOLD * DIFFICULTY[difficulty].gold * S.goldMult);
   refreshFields();
   setMsg("Map " + (idx + 1) + ": " + S.map.name + ". Place towers, then launch wave 1. Each wave gives " + AUTO_WAIT + " s before the next one starts. " + MAX_WAVES + " waves in total.");
@@ -1878,7 +1903,7 @@ function buildDiffSelect() {
     sel.appendChild(o);
   }
   sel.value = difficulty;
-  sel.title = "Middle: +50% creep health, +10% start gold. Hard: +100% health, +25% gold. Extreme: +250% health, +50% gold.";
+  sel.title = "Middle: +25% creep health, +10% start gold, +10% kill gold. Hard: +100% health, +25% start gold, +50% kill gold. Extreme: +250% health, +50% start gold, 2x kill gold.";
   sel.addEventListener("change", () => {
     difficulty = sel.value;
     loadMap(S.map.idx);   // a new difficulty starts the map again
@@ -2032,7 +2057,7 @@ const emptyDev = () => ({ towers: {}, creeps: {}, vs: {}, game: {}, waves: "", u
 let DEV = emptyDev();
 try { const j = JSON.parse(localStorage.getItem("mtd-dev") || "null"); if (j && typeof j === "object") DEV = Object.assign(emptyDev(), j); } catch (e) { /* ignore */ }
 const saveDev = () => { try { localStorage.setItem("mtd-dev", JSON.stringify(DEV)); } catch (e) { /* ignore */ } };
-const TOWER_FIELDS = [["cost", "Price"], ["dmg", "Damage"], ["range", "Range"], ["cd", "Reload (s)"], ["radius", "Blast radius"], ["slow", "Slow factor"], ["buff", "Damage buff"], ["speed", "Reload buff"], ["chain", "Chain jumps"], ["arcs", "Arcs"]];
+const TOWER_FIELDS = [["cost", "Price"], ["dmg", "Damage"], ["range", "Range"], ["cd", "Reload (s)"], ["radius", "Blast radius"], ["slow", "Slow factor"], ["buff", "Damage buff"], ["speed", "Reload buff"], ["chain", "Chain jumps"], ["arcs", "Arcs"], ["duration", "Infection (s)"]];
 const CREEP_FIELDS = [["hp", "Health"], ["speed", "Speed (cells/s)"], ["reward", "Gold reward"], ["r", "Size"]];
 
 function applyDev() {   // put the defaults back, then lay the edits over them (only in Developer mode)
