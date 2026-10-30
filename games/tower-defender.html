@@ -261,6 +261,7 @@
       <button id="pauseBtn" aria-pressed="false" title="Pause or resume (P)">Pause</button>
       <button id="speedBtn" title="Game speed: 1x, 2x or 3x (F)">Speed 1x</button>
       <button id="launchBtn" class="primary">Launch wave</button>
+      <button id="heatBtn" class="primary" style="display:none" title="Show or hide the kill heat map (H)">Heat map</button>
     </div>
     <div class="towers">
       <div class="pick" id="towerButtons"></div>
@@ -296,7 +297,9 @@
       <div>Every tower has 4 upgrades. For each one you choose what to improve: damage (+10%), range (+0.3) or reload (10% faster); the 4th upgrade counts double. Support towers improve their power instead of damage. Colored dots under a tower show what you upgraded: red damage, blue range, green reload.</div>
       <div>Targeting: single-target towers shoot the creep closest to the exit by default. Before the first upgrade you can switch them to the closest creep, the furthest one, or the one with the lowest health. Pick it in the Selected tab before placing, or on the placed tower.</div>
       <div>Creep filter: a tower hits every creep type by default. Before its first upgrade you can set it to hit only one type (for example only Fast, or only Bosses); it then ignores everything else, including splash damage and slows. A colored dot on the tower shows the type it is set to.</div>
-      <div>Difficulty: Easy is the baseline. Middle gives creeps +25% health and you +10% starting gold and +10% gold per kill, Hard +100% health, +25% start gold, +50% per kill, Extreme +250% health, +50% start gold, double gold per kill.</div>
+      <div>Early launch: pressing Launch (or Space) before the countdown ends pays gold for every second you skip, 0.4 gold per second on wave 1 and 0.04 more with each wave (scaled by the level's gold bonus). The button shows the amount.</div>
+      <div>Heat map: when a game ends, the board shows where creeps died (blue = few, red = most). The Heat map button or H switches it on and off.</div>
+      <div>Difficulty: Easy is the baseline. Each level changes creep health, your towers' damage and fire rate, and your gold. Middle: creeps +65% health, towers +5% damage and +5% fire rate, +10% start gold and kill gold. Hard: +165% health, towers +6% / +6%, +25% start gold, +50% kill gold. Extreme: +260% health, towers +12% / +12%, +50% start gold, double kill gold.</div>
       <div>Developer mode (Mode menu) adds a Dev tab: edit tower numbers (price, damage, range, reload, radius, buffs, air/ground), creep health, speed and reward, the damage percentages, game settings, and write your own wave script. Press Run to restart the map with your numbers. Edits are saved in the browser, can be exported and imported as JSON, and are ignored in the other modes.</div>
       <div>Speed: the Speed button (or F) cycles the game through 1x, 2x and 3x, handy for long runs. Spawners (1 to 4, header menu): every entrance sends that many creeps for each creep in the wave and the stream is faster, but each kill pays less gold (100%, 75%, 67%, 62%). Changing it restarts the map.</div>
       <div>Mode: Extended (default) lets you choose what each upgrade improves and set targeting and creep filters. Normal is the simple version: one Upgrade button that adds power and range, and every tower hits every creep type. Changing the mode restarts the map.</div>
@@ -347,12 +350,12 @@ const UPGRADE_TIME  = [3, 5, 8, 12];          // seconds a tower is offline afte
 const CORNER_TIME = 0.5, CORNER_SLOW = 0.4;   // a sharp turn slows ground creeps briefly
 const DIRS  = [[1,0],[-1,0],[0,1],[0,-1]];
 const DIRS8 = DIRS.concat([[1,1],[1,-1],[-1,1],[-1,-1]]);
-// Creep health multiplier, starting gold and gold per kill / wave bonus. Tuned with the balance bot: it reaches about wave 47 / 37 / 26 / 16.
+// Per level: creep health (mult), tower damage (dmg) and fire rate (rel), starting gold (gold) and gold per kill / wave bonus (reward). Tuned with a strong full-game bot.
 const DIFFICULTY = {
-  easy:    { name: "Easy",    mult: 1,    gold: 1,    reward: 1 },
-  middle:  { name: "Middle",  mult: 1.25, gold: 1.10, reward: 1.10 },
-  hard:    { name: "Hard",    mult: 2,    gold: 1.25, reward: 1.50 },
-  extreme: { name: "Extreme", mult: 3.5,  gold: 1.50, reward: 2.00 }
+  easy:    { name: "Easy",    mult: 1,    gold: 1,    reward: 1,    dmg: 1,    rel: 1 },
+  middle:  { name: "Middle",  mult: 1.65, gold: 1.10, reward: 1.10, dmg: 1.05, rel: 1.05 },
+  hard:    { name: "Hard",    mult: 2.65, gold: 1.25, reward: 1.50, dmg: 1.06, rel: 1.06 },
+  extreme: { name: "Extreme", mult: 3.6,  gold: 1.50, reward: 2.00, dmg: 1.12, rel: 1.12 }
 };
 let difficulty = "easy";
 
@@ -500,12 +503,12 @@ function bestOf(towerType) {
 // Stats from the tower's upgrades. Each upgrade goes into damage (power for support towers), range or reload.
 const newMod = () => ({ dmg: 0, rng: 0, rel: 0 });
 function towerStats(t, mod) {
-  const def = TOWERS[t.type], m = mod || t.mod || newMod(), bonus = m.dmg;
+  const def = TOWERS[t.type], m = mod || t.mod || newMod(), bonus = m.dmg, lv = DIFFICULTY[difficulty] || DIFFICULTY.easy;
   return {
     bonus,
-    dmg: def.dmg * (1 + bonus),
+    dmg: def.dmg * (1 + bonus) * lv.dmg,   // each level scales tower damage and reload speed as well as creep health
     range: def.range + m.rng,
-    cd: def.cd / (1 + m.rel),
+    cd: def.cd / ((1 + m.rel) * lv.rel),
     slow: def.slow ? def.slow * (1 - bonus) : 1,
     stun: 1.0 * (1 + bonus),
     radius: def.radius ? def.radius + m.rng : 0,
@@ -557,7 +560,7 @@ const CREEP_INFO = {
   tough:     { name: "Tough",     desc: "Heavy health and slow. Toxin and Net work well against it." },
   decoy:     { name: "Decoy",     desc: "Cuts corners: squeezes diagonally between two towers or walls that touch at a corner, where other creeps must go around." },
   spawner:   { name: "Spawner",   desc: "When killed, splits into 4 splitlings where it died." },
-  splitling: { name: "Splitling", desc: "Small child of a Spawner. Quick to kill, but it counts toward the wave." },
+  splitling: { name: "Splitling", desc: "Small child of a Spawner. Newborns move slowly for about a second, then run. Quick to kill, but it counts toward the wave." },
   bossNormal:  { name: "Normal boss",  desc: "A big, sturdy walker. Comes alone on wave 9. Pays a lot of gold, more on later waves." },
   bossFast:    { name: "Fast boss",    desc: "Runs at high speed with a lot of health. Comes alone on wave 18." },
   bossGroup:   { name: "Group boss",   desc: "A sturdy leader with a lot of health. Comes alone on wave 27." },
@@ -908,7 +911,9 @@ function retire(c) { if (!c.counted) { c.counted = true; c.w.done++; } }
 function splitCreep(c, child) {
   c.w.total += 4;
   for (let i = 0; i < 4; i++) {
-    S.creeps.push(buildCreep(child, c.x, c.y, c.cx, c.cy, c.exitIdx, c.allowed, c.w));
+    const n = buildCreep(child, c.x, c.y, c.cx, c.cy, c.exitIdx, c.allowed, c.w);
+    n.slowT = 1.2; n.slowMul = 0.35;   // newborn: slowed for 1.2 s, so a spawner killed near the exit does not leak its children at once
+    S.creeps.push(n);
   }
 }
 
@@ -916,6 +921,7 @@ function kill(c, by) {
   if (c.dead) return;
   if (by) S.kills[by] = (S.kills[by] || 0) + 1;   // which tower type got the kill
   { const ts = typeStat(c.type); ts.killed++; ts.by[by || "?"] = (ts.by[by || "?"] || 0) + 1; }
+  { const hx = Math.floor(c.x), hy = Math.floor(c.y); if (inBounds(hx, hy)) S.heat[hy * COLS + hx]++; }   // where creeps die, for the end-of-game heat map
   if (c.type === "spawner") splitCreep(c, "splitling");
   else if (c.type === "bossSpawner") splitCreep(c, "spawner");
   c.dead = true;
@@ -1164,6 +1170,22 @@ function makeWaveInfo(n) {
 // The wave a boss comes on, for the guides.
 const bossWave = type => (BOSS_ORDER.indexOf(type) + 1) * BLOCK;
 
+// Launching a wave early pays gold for every second of the countdown you skip. The rate rises with the wave number.
+const EARLY_BASE = 0.4, EARLY_GROW = 0.04;
+const earlyRate = n => (EARLY_BASE + EARLY_GROW * n) * S.goldMult;
+function earlyBonus() {
+  if (!S || S.over || S.levelDone || paused || S.launched >= MAX_WAVES || S.autoT === null || S.autoT <= 0) return 0;
+  return Math.round(S.autoT * earlyRate(S.launched + 1));
+}
+function launchEarly() {
+  const bonus = earlyBonus(), before = S.launched;
+  launchWave();
+  if (S && S.launched > before && bonus > 0) {
+    S.gold += bonus; S.earlyTotal += bonus;
+    FX.text(COLS / 2, 1.2, "+" + bonus + " early launch", "#7ee787");
+    setMsg("Wave " + S.launched + " launched early: +" + bonus + " gold.");
+  }
+}
 function launchWave() {
   if (!S || S.over || S.levelDone || paused || S.launched >= MAX_WAVES) return;
   S.launched++;
@@ -1471,7 +1493,8 @@ function renderBoard() {
     ctx.fillStyle = "rgba(230,241,250,0.85)"; ctx.font = "600 22px " + FONT; ctx.textAlign = "center";
     ctx.fillText("Place towers, then launch wave 1", W / 2, H / 2 - 40);
   }
-  if (S.over || S.levelDone) {
+  if ((S.over || S.levelDone) && S.showHeat) drawHeat(W, H);
+  else if (S.over || S.levelDone) {
     ctx.fillStyle = "rgba(8,22,38,0.7)"; ctx.fillRect(0, 0, W, H);
     ctx.fillStyle = BP.chalk; ctx.font = "700 40px " + FONT; ctx.textAlign = "center";
     ctx.fillText(S.over ? "Game over" : "Map cleared", W / 2, H / 2);
@@ -1482,6 +1505,31 @@ function renderBoard() {
     ctx.font = "500 18px " + FONT; ctx.fillStyle = "rgba(230,241,250,0.8)";
     ctx.fillText("Press P or Resume to continue", W / 2, H / 2 + 30);
   }
+}
+
+// End-of-game heat map: how many creeps died in each cell (blue = few, yellow, red = most).
+function drawHeat(W, H) {
+  ctx.fillStyle = "rgba(8,22,38,0.45)"; ctx.fillRect(0, 0, W, H);
+  let max = 0, hot = null;
+  for (let i = 0; i < S.heat.length; i++) if (S.heat[i] > max) { max = S.heat[i]; hot = i; }
+  const col = t => {   // 0..1 -> blue, green, yellow, red
+    const st = [[0, 60, 130, 255], [0.35, 70, 220, 160], [0.65, 250, 220, 60], [1, 255, 70, 50]];
+    for (let i = 1; i < st.length; i++) if (t <= st[i][0]) { const a = st[i - 1], b = st[i], u = (t - a[0]) / (b[0] - a[0]); return [a[1] + (b[1] - a[1]) * u, a[2] + (b[2] - a[2]) * u, a[3] + (b[3] - a[3]) * u].map(Math.round); }
+    return [255, 70, 50];
+  };
+  ctx.textAlign = "center"; ctx.font = "600 11px " + FONT;
+  for (let y = 0; y < ROWS; y++) for (let x = 0; x < COLS; x++) {
+    const v = S.heat[y * COLS + x]; if (!v) continue;
+    const t = Math.sqrt(v / max), [r, g, b] = col(t);
+    ctx.fillStyle = "rgba(" + r + "," + g + "," + b + "," + (0.35 + 0.45 * t).toFixed(2) + ")";
+    ctx.fillRect(x * CS, y * CS, CS, CS);
+    if (v >= max * 0.2) { ctx.fillStyle = "#fff"; ctx.fillText(String(v), x * CS + CS / 2, y * CS + CS / 2 + 4); }
+  }
+  ctx.fillStyle = BP.chalk; ctx.font = "700 26px " + FONT; ctx.textAlign = "center";
+  ctx.fillText((S.over ? "Game over" : "Map cleared") + " - where creeps died", W / 2, 30);
+  ctx.font = "500 14px " + FONT; ctx.fillStyle = "rgba(230,241,250,0.9)";
+  const total = S.heat.reduce((a, b) => a + b, 0);
+  ctx.fillText(total + " kills" + (hot !== null ? ", most in one cell: " + max + " at column " + (hot % COLS + 1) + ", row " + (Math.floor(hot / COLS) + 1) : "") + "   (H hides this)", W / 2, H - 12);
 }
 
 // Outline of a tower's attack area: a circle, or a plus shape for the Lance.
@@ -1735,7 +1783,11 @@ function refreshUI() {
   }
   const ended = S.over || S.levelDone;
   $("launchBtn").disabled = ended || paused || S.launched >= MAX_WAVES;
-  $("launchBtn").textContent = "Launch wave " + (S.launched + 1);
+  const eb = earlyBonus();
+  $("launchBtn").textContent = "Launch wave " + (S.launched + 1) + (eb > 0 ? " (+" + eb + ")" : "");
+  $("launchBtn").title = "Launch the next wave now (Space). Skipping the countdown pays " + (S && !ended ? Math.round(earlyRate(S.launched + 1) * 10) / 10 : 0) + " gold per second left.";
+  $("launchBtn").style.display = ended ? "none" : ""; $("pauseBtn").style.display = ended ? "none" : ""; $("heatBtn").style.display = ended ? "" : "none";
+  $("heatBtn").textContent = S.showHeat ? "Hide heat map" : "Heat map";
   const pb = $("pauseBtn"), label = paused ? "Resume" : "Pause";
   pb.disabled = ended;
   pb.setAttribute("aria-pressed", paused ? "true" : "false");
@@ -1768,7 +1820,7 @@ function loadMap(idx) {
     launched: 0, waves: [], queue: [], spawnT: 0, creeps: [], towers: new Map(), fx: [], time: 0, shake: 0, flash: 0, routePaths: [],
     kills: {}, leaked: 0, byType: {}, waveInfoCache: {}, custom: customWaves(),
     fields: null, fields8: null, autoT: null, over: false, levelDone: false, inspect: null,
-    selected: prevSel, hover: null, selCreep: null
+    selected: prevSel, hover: null, selCreep: null, heat: new Array(COLS * ROWS).fill(0), showHeat: true, earlyTotal: 0
   };
   S.goldMult = (S.map.ents.length > 1 ? TWO_IN_GOLD : 1) * DIFFICULTY[difficulty].reward;   // two entrances pay more; harder levels pay more per kill
   S.gold = Math.round(START_GOLD * DIFFICULTY[difficulty].gold * S.goldMult);
@@ -1903,7 +1955,7 @@ function buildDiffSelect() {
     sel.appendChild(o);
   }
   sel.value = difficulty;
-  sel.title = "Middle: +25% creep health, +10% start gold, +10% kill gold. Hard: +100% health, +25% start gold, +50% kill gold. Extreme: +250% health, +50% start gold, 2x kill gold.";
+  sel.title = "Middle: creeps +65% health, towers +5% damage and fire rate, +10% gold. Hard: +165% health, towers +6%, +25% start gold, +50% kill gold. Extreme: +260% health, towers +12%, +50% start gold, 2x kill gold.";
   sel.addEventListener("change", () => {
     difficulty = sel.value;
     loadMap(S.map.idx);   // a new difficulty starts the map again
@@ -1990,9 +2042,11 @@ document.addEventListener("keydown", e => {
   if (S.inspect) { const k = extended ? { u: "dmg", i: "rng", o: "rel" }[e.key.toLowerCase()] : (e.key.toLowerCase() === "u" ? "std" : null); if (k) upgradeTower(S.inspect, k); }
   if (e.key === "Escape") { S.inspect = null; refreshUI(); }
   if (e.key === "p" || e.key === "P") togglePause();
-  if (e.key === " ") { e.preventDefault(); launchWave(); }
+  if (e.key === " ") { e.preventDefault(); launchEarly(); }
+  if ((e.key === "h" || e.key === "H") && S && (S.over || S.levelDone)) { S.showHeat = !S.showHeat; }
 });
-$("launchBtn").addEventListener("click", launchWave);
+$("launchBtn").addEventListener("click", launchEarly);
+$("heatBtn").addEventListener("click", () => { if (S) S.showHeat = !S.showHeat; });
 $("pauseBtn").addEventListener("click", togglePause);
 function setSpeed(v) {
   gameSpeed = v;
