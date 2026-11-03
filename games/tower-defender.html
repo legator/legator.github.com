@@ -503,7 +503,7 @@ const VS_ROWS = {
   sniper:  [0.33, 0.25, 1.00, 0.66, 0.25, 0.50, 0.25, 0.50, 1.00],
   gatling: [0.66, 1.00, 0.33, 0.75, 0.50, 0.50, 0.66, 0.75, 0.40],
   plague:  [0.75, 0.50, 1.00, 0.66, 0.50, 0.75, 0.33, 0.66, 0.50],
-  flak:    [0.25, 0.25, 0.25, 1.00, 0.25, 0.25, 0.25, 0.25, 0.25],
+  flak:    [0.25, 0.25, 0.25, 1.00, 0.25, 0.25, 0.25, 0.25, 0.50],
   burst:   [0.50, 0.25, 0.33, 0.66, 0.75, 1.00, 1.00, 0.33, 0.25],
   tesla:   [0.66, 1.00, 0.25, 0.66, 0.75, 0.50, 1.00, 0.75, 0.50],
   lance:   [0.66, 0.66, 0.66, 0.66, 0.66, 0.66, 0.66, 0.66, 0.66],
@@ -584,7 +584,7 @@ const CREEPS = {
   bossFast:    { hp: 160, speed: 4.2, reward: 30, color: "#b7791f", r: 0.40, boss: true, base: "fast" },
   bossGroup:   { hp: 220, speed: 1.8, reward: 34, color: "#dd6b20", r: 0.44, boss: true, base: "squad" },
   bossTough:   { hp: 520, speed: 1.0, reward: 45, color: "#553c9a", r: 0.50, boss: true, base: "tough" },
-  bossAir:     { hp: 220, speed: 1.7, reward: 38, color: "#2b6cb0", r: 0.44, boss: true, base: "flyer", flying: true },
+  bossAir:     { hp: 200, speed: 1.0, reward: 38, color: "#2b6cb0", r: 0.44, boss: true, base: "flyer", flying: true },
   bossDecoy:   { hp: 260, speed: 1.8, reward: 38, color: "#97266d", r: 0.44, boss: true, base: "decoy", diag: true },
   bossSpawner: { hp: 240, speed: 1.6, reward: 38, color: "#2c7a7b", r: 0.48, boss: true, base: "spawner" }
 };
@@ -600,7 +600,7 @@ const CREEP_INFO = {
   bossNormal:  { name: "Normal boss",  desc: "A big, sturdy walker. Comes alone on wave 9. Pays a lot of gold, more on later waves." },
   bossFast:    { name: "Fast boss",    desc: "Runs at high speed with a lot of health. Comes alone on wave 18." },
   bossGroup:   { name: "Group boss",   desc: "A sturdy leader with a lot of health. Comes alone on wave 27." },
-  bossAir:     { name: "Air boss",     desc: "Flies straight to its exit, ignoring the maze. Comes alone on wave 36." },
+  bossAir:     { name: "Air boss",     desc: "Flies straight to its exit, ignoring the maze, but slowly (it has little time under fire, so it is slow and a bit softer than the other bosses). Frost and Aura slow it too. Comes alone on wave 36." },
   bossTough:   { name: "Tough boss",   desc: "Slow with huge health and the biggest reward. Comes alone on wave 45." },
   bossDecoy:   { name: "Decoy boss",   desc: "Squeezes through diagonal gaps between towers. Comes alone on wave 54." },
   bossSpawner: { name: "Spawner boss", desc: "When killed, splits into 4 spawners, which split again. Comes alone on the last wave, wave 63." }
